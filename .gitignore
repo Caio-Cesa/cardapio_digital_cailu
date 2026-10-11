@@ -1,0 +1,23 @@
+# ==============================================================================
+# ARQUIVOS E PASTAS IGNORADOS NO GIT (GITIGNORE)
+# ==============================================================================
+
+# Pasta com as fotos e documentos originais (brutos)
+Fotos/
+fotos/
+[Ff]otos/
+
+# Documentos em PDF (como comprovante de CNPJ e alvarás)
+*.pdf
+
+# Arquivos temporários e de sistema
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Ambientes e editores
+.vscode/
+.idea/
+*.swp
+*.log
