@@ -2,18 +2,21 @@
  * ==============================================================================
  * CARDÁPIO DIGITAL CAILU BURGER - LÓGICA PRINCIPAL & UX
  * ==============================================================================
- * Gerenciamento do catálogo, busca dinâmica, carrinho de compras interativo,
- * persistência em LocalStorage e integração com WhatsApp (100% sem emojis na URL).
+ * Gerenciamento do catálogo com exibição em Carrossel por Categoria,
+ * personalização inteligente de bebidas (Versão Normal/Zero e Tamanhos),
+ * carrinho de compras interativo, persistência em LocalStorage e integração WhatsApp (100% sem emojis na URL).
  */
 
-// Estado da Aplicação
+// Estado Global da Aplicação
 const AppState = {
   cart: [],
   activeCategory: "all",
   searchQuery: "",
   appliedCoupon: null, // { code: 'CAILU10', discountPercent: 10 }
   selectedProductForModal: null,
-  modalQuantity: 1
+  modalQuantity: 1,
+  selectedOptionType: null, // Ex: "Zero Açúcar" ou "Normal (Original)"
+  selectedOptionSize: null   // Ex: { id: "Lata 350ml", name: "Lata 350ml", price: 6.50 }
 };
 
 // Chaves do LocalStorage
@@ -74,6 +77,22 @@ function showToast(message, type = "success") {
     }
   }, 3000);
 }
+
+/**
+ * Rola a esteira de carrossel para esquerda ou direita com animação suave
+ */
+window.scrollCarousel = function(carouselId, direction) {
+  const container = document.getElementById(carouselId);
+  if (!container) return;
+
+  const card = container.querySelector(".product-card");
+  const scrollAmount = card ? card.offsetWidth + 14 : 300;
+
+  container.scrollBy({
+    left: direction * scrollAmount,
+    behavior: "smooth"
+  });
+};
 
 // ==============================================================================
 // VERIFICAÇÃO DE HORÁRIO DE ATENDIMENTO
@@ -155,7 +174,7 @@ function initRestaurantInfo() {
   if (addressEl) {
     addressEl.innerHTML = `
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-      ${RESTAURANT_CONFIG.address}
+      ${RESTAURANT_CONFIG.neighborhood} - BH
     `;
   }
   
@@ -202,6 +221,21 @@ function renderCategories() {
       btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
 
       renderProducts();
+
+      // Rola suavemente até a seção correspondente
+      if (category.id !== "all") {
+        const targetSection = document.getElementById(`cat-section-${category.id}`);
+        if (targetSection) {
+          const navOffset = 110;
+          const sectionPos = targetSection.getBoundingClientRect().top + window.pageYOffset - navOffset;
+          window.scrollTo({ top: sectionPos, behavior: "smooth" });
+        }
+      } else {
+        const mainContent = document.getElementById("mainContent");
+        if (mainContent) {
+          window.scrollTo({ top: mainContent.offsetTop - 120, behavior: "smooth" });
+        }
+      }
     });
 
     li.appendChild(btn);
@@ -210,7 +244,7 @@ function renderCategories() {
 }
 
 // ==============================================================================
-// RENDERIZAÇÃO DOS PRODUTOS
+// RENDERIZAÇÃO DOS PRODUTOS (MODO CARROSSEL POR CATEGORIA)
 // ==============================================================================
 function renderProducts() {
   const menuContainer = document.getElementById("menuSections");
@@ -222,17 +256,19 @@ function renderProducts() {
 
   menuContainer.innerHTML = "";
 
-  // Filtragem por busca e por categoria
+  const isSearchActive = AppState.searchQuery.trim() !== "";
+
+  // Filtragem
   let filtered = PRODUCTS.filter(prod => {
     const matchCategory = AppState.activeCategory === "all" || prod.category === AppState.activeCategory;
-    const matchSearch = AppState.searchQuery === "" || 
+    const matchSearch = !isSearchActive || 
       prod.name.toLowerCase().includes(AppState.searchQuery.toLowerCase()) ||
       prod.description.toLowerCase().includes(AppState.searchQuery.toLowerCase());
     return matchCategory && matchSearch;
   });
 
   // Feedback de busca
-  if (AppState.searchQuery.trim() !== "") {
+  if (isSearchActive) {
     resultFeedback.style.display = "flex";
     resultCount.textContent = `${filtered.length} item(ns) encontrado(s) para "${AppState.searchQuery}"`;
   } else {
@@ -247,7 +283,25 @@ function renderProducts() {
     emptyState.style.display = "none";
   }
 
-  // Agrupamento por Categoria
+  // Se a busca textual estiver ativa, exibe em grade adaptável para escanear com facilidade
+  if (isSearchActive) {
+    const searchSection = document.createElement("section");
+    searchSection.className = "category-section";
+
+    const grid = document.createElement("div");
+    grid.className = "products-grid-search";
+
+    filtered.forEach(prod => {
+      const card = createProductCard(prod, false);
+      grid.appendChild(card);
+    });
+
+    searchSection.appendChild(grid);
+    menuContainer.appendChild(searchSection);
+    return;
+  }
+
+  // MODO CARROSSEL: Agrupa por categorias e cria esteiras horizontais deslizantes
   const categoriesToDisplay = AppState.activeCategory === "all" 
     ? CATEGORIES.filter(c => c.id !== "all") 
     : CATEGORIES.filter(c => c.id === AppState.activeCategory);
@@ -260,63 +314,78 @@ function renderProducts() {
     section.className = "category-section";
     section.id = `cat-section-${cat.id}`;
 
-    // Título da Seção
+    // Cabeçalho da Seção com Título e Botões de Navegação do Carrossel
     const sectionHeader = document.createElement("div");
     sectionHeader.className = "category-header-title";
     sectionHeader.innerHTML = `
-      <span class="section-icon">${cat.icon}</span>
-      <h2>${cat.name}</h2>
-      <span class="item-count-badge">${catProducts.length} itens</span>
+      <div class="category-header-left">
+        <span class="section-icon">${cat.icon}</span>
+        <h2>${cat.name}</h2>
+        <span class="item-count-badge">${catProducts.length} itens</span>
+      </div>
+      <div class="carousel-nav-arrows">
+        <button type="button" class="carousel-arrow-btn" onclick="scrollCarousel('carousel-${cat.id}', -1)" aria-label="Rolar para esquerda" title="Anterior">‹</button>
+        <button type="button" class="carousel-arrow-btn" onclick="scrollCarousel('carousel-${cat.id}', 1)" aria-label="Rolar para direita" title="Próximo">›</button>
+      </div>
     `;
     section.appendChild(sectionHeader);
 
-    // Grid de Cards
-    const grid = document.createElement("div");
-    grid.className = "products-grid";
+    // Esteira Carrossel
+    const carouselWrapper = document.createElement("div");
+    carouselWrapper.className = "category-carousel-wrapper";
+
+    const carousel = document.createElement("div");
+    carousel.className = "category-carousel";
+    carousel.id = `carousel-${cat.id}`;
 
     catProducts.forEach(prod => {
-      const card = createProductCard(prod);
-      grid.appendChild(card);
+      const card = createProductCard(prod, true); // true = modo carrossel
+      carousel.appendChild(card);
     });
 
-    section.appendChild(grid);
+    carouselWrapper.appendChild(carousel);
+    section.appendChild(carouselWrapper);
     menuContainer.appendChild(section);
   });
 }
 
 /**
- * Cria o elemento DOM para o card do produto com seletor de quantidade direto
+ * Cria o elemento DOM para o card do produto
  */
-function createProductCard(prod) {
+function createProductCard(prod, isCarousel = false) {
   const card = document.createElement("article");
-  card.className = "product-card";
+  card.className = `product-card ${isCarousel ? "carousel-card" : ""}`;
   card.dataset.id = prod.id;
 
-  // Verifica quantidade atual no carrinho
+  // Verifica quantidade no carrinho (para produtos diretos sem opções)
   const cartItem = AppState.cart.find(item => item.id === prod.id);
   const currentQty = cartItem ? cartItem.quantity : 0;
 
   const badgeHtml = prod.badge ? `<span class="product-badge-flag">${prod.badge}</span>` : "";
   const servesHtml = prod.serves ? `<span class="product-serves-flag">${prod.serves}</span>` : "";
+  const subtitleHtml = prod.subtitle ? `<p class="product-subtitle">${prod.subtitle}</p>` : "";
+
+  const pricePrefix = prod.hasOptions ? "A partir de" : "Valor";
 
   card.innerHTML = `
-    <div class="product-image-container" onclick="openProductModal('${prod.id}')" title="Clique para detalhes e observações">
+    <div class="product-image-container" onclick="openProductModal('${prod.id}')" title="Clique para detalhes e opções">
       <img src="${prod.image}" alt="${prod.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=80'">
       ${badgeHtml}
       ${servesHtml}
     </div>
     <div class="product-details">
       <h3 class="product-title" onclick="openProductModal('${prod.id}')">${prod.name}</h3>
+      ${subtitleHtml}
       <p class="product-desc">${prod.description}</p>
       
       <div class="product-footer-row">
         <div class="product-price-wrapper">
-          <span class="product-price-currency">A partir de</span>
+          <span class="product-price-currency">${pricePrefix}</span>
           <span class="product-price-value">${formatMoney(prod.price)}</span>
         </div>
 
         <div class="product-action-wrapper" id="cardAction-${prod.id}">
-          ${renderCardActionButtons(prod.id, currentQty)}
+          ${renderCardAction(prod, currentQty)}
         </div>
       </div>
     </div>
@@ -326,20 +395,31 @@ function createProductCard(prod) {
 }
 
 /**
- * Renderiza o botão "+ Adicionar" ou o seletor "[-] Qtd [+]" no card
+ * Renderiza o botão no card:
+ * Se tiver opções (bebidas), mostra botão "Escolher".
+ * Se não tiver, mostra botão "Adicionar" ou o seletor [- Qtd +].
  */
-function renderCardActionButtons(productId, quantity) {
+function renderCardAction(prod, quantity) {
+  if (prod.hasOptions) {
+    return `
+      <button type="button" class="btn-choose-options" onclick="openProductModal('${prod.id}')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Escolher
+      </button>
+    `;
+  }
+
   if (quantity > 0) {
     return `
       <div class="quantity-controller">
-        <button type="button" class="qty-btn" onclick="updateItemQuantityById('${productId}', -1)" aria-label="Diminuir">-</button>
+        <button type="button" class="qty-btn" onclick="updateItemQuantityById('${prod.id}', -1)" aria-label="Diminuir">-</button>
         <span class="qty-display">${quantity}</span>
-        <button type="button" class="qty-btn" onclick="updateItemQuantityById('${productId}', 1)" aria-label="Aumentar">+</button>
+        <button type="button" class="qty-btn" onclick="updateItemQuantityById('${prod.id}', 1)" aria-label="Aumentar">+</button>
       </div>
     `;
   } else {
     return `
-      <button type="button" class="btn-add-product" onclick="quickAddToCart('${productId}')">
+      <button type="button" class="btn-add-product" onclick="quickAddToCart('${prod.id}')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         Adicionar
       </button>
@@ -348,7 +428,7 @@ function renderCardActionButtons(productId, quantity) {
 }
 
 // ==============================================================================
-// MODAL DE DETALHES DO PRODUTO (FOTO MAIOR & OBSERVAÇÃO)
+// MODAL DE DETALHES & OPÇÕES DO PRODUTO (BEBIDAS: NORMAL/ZERO & TAMANHO)
 // ==============================================================================
 window.openProductModal = function(productId) {
   const prod = PRODUCTS.find(p => p.id === productId);
@@ -371,6 +451,83 @@ window.openProductModal = function(productId) {
     badgeEl.style.display = "none";
   }
 
+  // Configuração das Opções Customizáveis (Bebidas)
+  const optionsWrapper = document.getElementById("modalCustomOptionsWrapper");
+  const typeGroup = document.getElementById("modalTypeGroup");
+  const typeChips = document.getElementById("modalTypeChips");
+  const sizeGroup = document.getElementById("modalSizeGroup");
+  const sizeChips = document.getElementById("modalSizeChips");
+  const typeTitle = document.getElementById("modalTypeGroupTitle");
+
+  if (prod.hasOptions) {
+    optionsWrapper.style.display = "flex";
+
+    // 1. Grupo de Versão (Normal / Zero Açúcar / Com ou Sem Gás)
+    if (prod.types && prod.types.length > 0) {
+      typeGroup.style.display = "flex";
+      typeTitle.textContent = prod.optionTypeLabel || "Escolha a Versão";
+      typeChips.innerHTML = "";
+
+      // Padrão selecionado: o primeiro
+      AppState.selectedOptionType = prod.types[0].name;
+
+      prod.types.forEach((typeObj, index) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `option-chip-btn ${index === 0 ? "selected" : ""}`;
+        btn.textContent = typeObj.name;
+
+        btn.addEventListener("click", () => {
+          typeChips.querySelectorAll(".option-chip-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          AppState.selectedOptionType = typeObj.name;
+        });
+
+        typeChips.appendChild(btn);
+      });
+    } else {
+      typeGroup.style.display = "none";
+      AppState.selectedOptionType = null;
+    }
+
+    // 2. Grupo de Tamanho / Volume
+    if (prod.sizes && prod.sizes.length > 0) {
+      sizeGroup.style.display = "flex";
+      sizeChips.innerHTML = "";
+
+      // Padrão selecionado
+      const defaultSize = prod.sizes.find(s => s.default) || prod.sizes[0];
+      AppState.selectedOptionSize = defaultSize;
+
+      prod.sizes.forEach(sizeObj => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `option-chip-btn ${sizeObj.id === defaultSize.id ? "selected" : ""}`;
+        btn.innerHTML = `
+          <span>${sizeObj.name}</span>
+          <span class="chip-price-tag">${formatMoney(sizeObj.price)}</span>
+        `;
+
+        btn.addEventListener("click", () => {
+          sizeChips.querySelectorAll(".option-chip-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          AppState.selectedOptionSize = sizeObj;
+          updateModalPrice();
+        });
+
+        sizeChips.appendChild(btn);
+      });
+    } else {
+      sizeGroup.style.display = "none";
+      AppState.selectedOptionSize = null;
+    }
+
+  } else {
+    optionsWrapper.style.display = "none";
+    AppState.selectedOptionType = null;
+    AppState.selectedOptionSize = null;
+  }
+
   updateModalPrice();
 
   const backdrop = document.getElementById("productModalBackdrop");
@@ -389,7 +546,9 @@ function updateModalPrice() {
   const prod = AppState.selectedProductForModal;
   if (!prod) return;
 
-  const total = prod.price * AppState.modalQuantity;
+  const unitPrice = AppState.selectedOptionSize ? AppState.selectedOptionSize.price : prod.price;
+  const total = unitPrice * AppState.modalQuantity;
+
   document.getElementById("modalQtyDisplay").textContent = AppState.modalQuantity;
   document.getElementById("modalAddBtnPrice").textContent = formatMoney(total);
 }
@@ -404,6 +563,12 @@ function updateModalPrice() {
 window.quickAddToCart = function(productId) {
   const prod = PRODUCTS.find(p => p.id === productId);
   if (!prod) return;
+
+  // Se tiver opções, abre o modal para o cliente escolher
+  if (prod.hasOptions) {
+    openProductModal(productId);
+    return;
+  }
 
   addToCart(prod, 1, "");
   showToast(`Adicionado: ${prod.name}`);
@@ -432,7 +597,7 @@ window.updateItemQuantityById = function(productId, delta) {
 };
 
 /**
- * Adiciona ao carrinho com suporte a observação
+ * Adiciona ao carrinho produto simples
  */
 function addToCart(product, quantity = 1, notes = "") {
   const existingIndex = AppState.cart.findIndex(i => i.id === product.id && i.notes === notes);
@@ -456,13 +621,37 @@ function addToCart(product, quantity = 1, notes = "") {
 }
 
 /**
+ * Adiciona ao carrinho produto customizado (Bebidas com Versão e Tamanho)
+ */
+function addCustomItemToCart(itemObj) {
+  const existingIndex = AppState.cart.findIndex(i => i.id === itemObj.id && i.notes === itemObj.notes);
+
+  if (existingIndex > -1) {
+    AppState.cart[existingIndex].quantity += itemObj.quantity;
+  } else {
+    AppState.cart.push({
+      id: itemObj.id,
+      originalId: itemObj.originalId,
+      name: itemObj.name,
+      price: itemObj.price,
+      quantity: itemObj.quantity,
+      image: itemObj.image,
+      notes: itemObj.notes.trim()
+    });
+  }
+
+  saveCart();
+  updateCartUI();
+}
+
+/**
  * Atualiza quantidade de um item na lista do Drawer
  */
 window.updateDrawerItemQuantity = function(index, delta) {
   if (!AppState.cart[index]) return;
 
   const newQty = AppState.cart[index].quantity + delta;
-  const prodId = AppState.cart[index].id;
+  const originalId = AppState.cart[index].originalId || AppState.cart[index].id;
 
   if (newQty <= 0) {
     AppState.cart.splice(index, 1);
@@ -472,7 +661,7 @@ window.updateDrawerItemQuantity = function(index, delta) {
 
   saveCart();
   updateCartUI();
-  refreshCardButtons(prodId);
+  refreshCardButtons(originalId);
 };
 
 /**
@@ -480,11 +669,11 @@ window.updateDrawerItemQuantity = function(index, delta) {
  */
 window.removeCartItem = function(index) {
   if (!AppState.cart[index]) return;
-  const prodId = AppState.cart[index].id;
+  const originalId = AppState.cart[index].originalId || AppState.cart[index].id;
   AppState.cart.splice(index, 1);
   saveCart();
   updateCartUI();
-  refreshCardButtons(prodId);
+  refreshCardButtons(originalId);
   showToast("Item removido da sacola", "info");
 };
 
@@ -492,12 +681,15 @@ window.removeCartItem = function(index) {
  * Atualiza visual do card de um produto específico
  */
 function refreshCardButtons(productId) {
+  const prod = PRODUCTS.find(p => p.id === productId);
+  if (!prod) return;
+
   const container = document.getElementById(`cardAction-${productId}`);
   if (!container) return;
 
   const item = AppState.cart.find(i => i.id === productId);
   const qty = item ? item.quantity : 0;
-  container.innerHTML = renderCardActionButtons(productId, qty);
+  container.innerHTML = renderCardAction(prod, qty);
 }
 
 /**
@@ -566,7 +758,7 @@ function updateCartUI() {
     drawerList.innerHTML = `
       <div style="text-align: center; padding: 28px 10px; color: var(--text-dim);">
         <p style="font-weight: 700; color: var(--text-muted); font-size: 1.05rem; margin-bottom: 4px;">Sua sacola está vazia.</p>
-        <small>Adicione burgers artesanais, smash, fritas e bebidas para continuar!</small>
+        <small>Adicione burgers artesanais, smash, combos e bebidas para continuar!</small>
       </div>
     `;
   } else {
@@ -736,7 +928,6 @@ function finishOrderWhatsApp() {
   saveCustomerData();
 
   // 3. Montagem da Mensagem Textual Limpa (SEM NENHUM EMOJI)
-  // Utiliza separadores textuais seguros para não truncar na URL do navegador ou do WhatsApp
   const separator = "----------------------------------------";
   let message = `*NOVO PEDIDO - ${RESTAURANT_CONFIG.shortName.toUpperCase()}*\n`;
   message += `${separator}\n\n`;
@@ -913,11 +1104,40 @@ function setupEventListeners() {
     updateModalPrice();
   });
 
+  // Botão Adicionar à Sacola no Modal (Suporta produtos simples e bebidas com opções)
   document.getElementById("btnModalAddToCart").addEventListener("click", () => {
-    if (!AppState.selectedProductForModal) return;
+    const prod = AppState.selectedProductForModal;
+    if (!prod) return;
+
     const notes = document.getElementById("modalProductNotes").value;
-    addToCart(AppState.selectedProductForModal, AppState.modalQuantity, notes);
-    showToast(`Adicionado: ${AppState.selectedProductForModal.name}`);
+
+    if (prod.hasOptions) {
+      // Produto com opções (Bebidas)
+      const typePart = AppState.selectedOptionType ? AppState.selectedOptionType : "";
+      const sizePart = AppState.selectedOptionSize ? AppState.selectedOptionSize.name : "";
+      const optionsText = [typePart, sizePart].filter(Boolean).join(" - ");
+
+      const customName = optionsText ? `${prod.name} (${optionsText})` : prod.name;
+      const unitPrice = AppState.selectedOptionSize ? AppState.selectedOptionSize.price : prod.price;
+      const uniqueId = `${prod.id}_${AppState.selectedOptionType || "padrao"}_${AppState.selectedOptionSize ? AppState.selectedOptionSize.id : "padrao"}`;
+
+      addCustomItemToCart({
+        id: uniqueId,
+        originalId: prod.id,
+        name: customName,
+        price: unitPrice,
+        quantity: AppState.modalQuantity,
+        image: prod.image,
+        notes: notes
+      });
+
+      showToast(`Adicionado: ${customName}`);
+    } else {
+      // Produto normal (Burgers, Combos, etc.)
+      addToCart(prod, AppState.modalQuantity, notes);
+      showToast(`Adicionado: ${prod.name}`);
+    }
+
     closeProductModal();
   });
 

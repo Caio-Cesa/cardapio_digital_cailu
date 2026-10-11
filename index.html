@@ -505,6 +505,31 @@
         <p class="product-modal-serves" id="modalProductServes">Individual</p>
         <p class="product-modal-desc" id="modalProductDesc">Descrição detalhada</p>
 
+        <!-- Seletores de Opções Customizáveis (Versão Normal/Zero e Tamanho) -->
+        <div class="modal-options-wrapper" id="modalCustomOptionsWrapper" style="display: none;">
+          <!-- Grupo de Versão (Normal / Zero Açúcar) -->
+          <div class="product-option-group" id="modalTypeGroup" style="display: none;">
+            <div class="option-group-header">
+              <label class="option-group-title" id="modalTypeGroupTitle">Escolha a Versão</label>
+              <span class="required-badge">Obrigatório</span>
+            </div>
+            <div class="option-chips-container" id="modalTypeChips">
+              <!-- Renderizado via script.js -->
+            </div>
+          </div>
+
+          <!-- Grupo de Tamanho / Volume -->
+          <div class="product-option-group" id="modalSizeGroup" style="display: none;">
+            <div class="option-group-header">
+              <label class="option-group-title">Escolha o Tamanho</label>
+              <span class="required-badge">Obrigatório</span>
+            </div>
+            <div class="option-chips-container" id="modalSizeChips">
+              <!-- Renderizado via script.js -->
+            </div>
+          </div>
+        </div>
+
         <!-- Campo de Observação Específica do Item -->
         <div class="form-field mt-3">
           <label for="modalProductNotes">Observações para este item (opcional):</label>
