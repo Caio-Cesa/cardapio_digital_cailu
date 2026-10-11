@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  
+  <title>Cailu Burger | O Melhor Burger de BH | Cardápio Digital & Delivery</title>
+  
+  <!-- Meta tags de SEO e Redes Sociais / WhatsApp Preview -->
+  <meta name="description" content="Cardápio Digital Cailu Burger Artesanal. Um casal, um sonho e o melhor burger de BH! Peça hambúrgueres artesanais na brasa, smash burgers e combos exclusivos direto pelo WhatsApp.">
+  <meta name="theme-color" content="#0b1120">
+  <meta property="og:title" content="Cailu Burger Artesanal - Cardápio Digital & Delivery">
+  <meta property="og:description" content="Um casal, um sonho e o melhor burger de BH! Faça seu pedido online no Jardim América com entrega rápida.">
+  <meta property="og:type" content="restaurant.menu">
+  <meta property="og:image" content="img/logo-3d.jpeg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Favicon com a Logo Oficial -->
+  <link rel="icon" type="image/jpeg" href="img/logo.jpeg">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos da Aplicação -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ========================================================================= -->
+  <!-- CABEÇALHO / HERO DO RESTAURANTE -->
+  <!-- ========================================================================= -->
+  <header class="restaurant-hero" id="topo">
+    <div class="hero-cover-backdrop"></div>
+    <div class="hero-container">
+      
+      <!-- Top Bar com Logo Oficial e Status -->
+      <div class="hero-brand-row">
+        <div class="brand-avatar-wrapper">
+          <div class="brand-avatar">
+            <img src="img/logo.jpeg" alt="Logo Cailu Burger Artesanal" class="brand-avatar-img" id="restaurantLogoImg">
+          </div>
+          <div class="store-badge-status" id="storeStatusBadge" title="Status de funcionamento">
+            <span class="status-dot"></span>
+            <span class="status-text" id="storeStatusText">Aberto Agora</span>
+          </div>
+        </div>
+
+        <div class="brand-info">
+          <h1 class="restaurant-title" id="restaurantName">Cailu Burger</h1>
+          <p class="restaurant-tagline" id="restaurantSlogan">Um casal, um sonho e o melhor burger de BH!</p>
+          <div class="brand-meta-links">
+            <a href="https://www.instagram.com/cailuburger/" target="_blank" rel="noopener" class="meta-link" id="instagramLink">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+              <span>@cailuburger</span>
+            </a>
+            <span class="meta-separator">•</span>
+            <span class="meta-location" id="restaurantAddress">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              Jardim América - BH
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pílulas de Informações de Delivery -->
+      <div class="delivery-stats-grid">
+        <div class="stat-pill">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-details">
+            <span class="stat-label">Tempo Médio</span>
+            <strong class="stat-val" id="statTime">35 - 50 min</strong>
+          </div>
+        </div>
+
+        <div class="stat-pill">
+          <div class="stat-icon">🛵</div>
+          <div class="stat-details">
+            <span class="stat-label">Entrega</span>
+            <strong class="stat-val" id="statCoverage">Jardim América & BH</strong>
+          </div>
+        </div>
+
+        <div class="stat-pill">
+          <div class="stat-icon">💰</div>
+          <div class="stat-details">
+            <span class="stat-label">Pedido Mínimo</span>
+            <strong class="stat-val" id="statMinOrder">R$ 20,00</strong>
+          </div>
+        </div>
+
+        <div class="stat-pill">
+          <div class="stat-icon">🕒</div>
+          <div class="stat-details">
+            <span class="stat-label">Horário Hoje</span>
+            <strong class="stat-val" id="statHours">18:30 às 23:30</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- BARRA DE PESQUISA & NAVEGAÇÃO DE CATEGORIAS (STICKY) -->
+  <!-- ========================================================================= -->
+  <div class="sticky-nav-wrapper" id="stickyNav">
+    <div class="container-app">
+      
+      <!-- Input de Busca Rápida -->
+      <div class="search-box-container">
+        <div class="search-input-group">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input 
+            type="search" 
+            id="searchInput" 
+            placeholder="O que você deseja saborear hoje? (ex: bacon love, dose dupla, crispy...)" 
+            autocomplete="off"
+            aria-label="Buscar produtos no cardápio"
+          >
+          <button type="button" class="clear-search-btn" id="clearSearchBtn" aria-label="Limpar busca" style="display: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Categorias Horizontal com Rolagem Touch -->
+      <nav class="categories-nav" aria-label="Categorias do cardápio">
+        <ul class="categories-list" id="categoriesContainer">
+          <!-- Renderizado dinamicamente via script.js -->
+        </ul>
+      </nav>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- LISTAGEM DE PRODUTOS DO CARDÁPIO -->
+  <!-- ========================================================================= -->
+  <main class="main-content container-app" id="mainContent">
+    
+    <!-- Alerta de Restaurante Fechado (se aplicável) -->
+    <div class="offline-banner" id="closedStoreBanner" style="display: none;">
+      <div class="banner-content">
+        <span class="banner-emoji">🌙</span>
+        <div>
+          <strong>Estamos fechados no momento!</strong>
+          <p>Você pode navegar pelo cardápio e adiantar seu pedido, mas o preparo iniciará em nosso próximo horário de atendimento.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicador de Resultados de Busca -->
+    <div class="search-result-info" id="searchResultFeedback" style="display: none;">
+      <span id="searchResultCount">0 itens encontrados</span>
+      <button type="button" class="btn-text-link" id="resetSearchFilter">Ver todo o cardápio</button>
+    </div>
+
+    <!-- Seções de Produtos por Categoria -->
+    <div class="menu-sections-wrapper" id="menuSections">
+      <!-- Preenchido via script.js -->
+    </div>
+
+    <!-- Estado Vazio (Nenhum produto encontrado) -->
+    <div class="empty-results-state" id="emptyState" style="display: none;">
+      <div class="empty-icon">🔍</div>
+      <h3>Nenhum item encontrado</h3>
+      <p>Tente buscar por outro termo ou selecione uma categoria acima.</p>
+      <button class="btn btn-outline" id="btnResetEmptySearch">Limpar pesquisa</button>
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER INFORMATIVO -->
+  <!-- ========================================================================= -->
+  <footer class="app-footer">
+    <div class="container-app">
+      <div class="footer-brand">
+        <span class="footer-logo">🍔 Cailu Burger Artesanal</span>
+        <p>Um casal, um sonho e o melhor burger de BH!</p>
+      </div>
+      <div class="footer-details">
+        <p><strong>WhatsApp Delivery:</strong> (31) 98285-3457</p>
+        <p><strong>Instagram Oficial:</strong> @cailuburger</p>
+        <p><strong>Endereço:</strong> Rua Lindolfo de Azevedo, 1518 - Jardim América, BH - MG</p>
+        <p><strong>CNPJ:</strong> 64.875.012/0001-42 (Luana Fátima Ribeiro Avelar)</p>
+        <p><strong>Horário de Funcionamento:</strong> Quarta a Domingo das 18:30 às 23:30</p>
+        <p><strong>Formas de Pagamento:</strong> PIX, Cartão de Crédito/Débito e Dinheiro</p>
+      </div>
+      <div class="footer-copy">
+        <small>© <span id="currentYear"></span> Cailu Burger. Todos os direitos reservados. Pedidos via WhatsApp.</small>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- BARRA FLUTUANTE DA SACOLA (BOTTOM BAR) -->
+  <!-- ========================================================================= -->
+  <aside class="floating-cart-bar" id="floatingCartBar" style="display: none;" aria-live="polite">
+    <button type="button" class="floating-cart-btn" id="openCartBtn" aria-label="Abrir sacola de compras">
+      <div class="floating-cart-left">
+        <div class="cart-badge-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span class="cart-count-badge" id="floatingCartCount">0</span>
+        </div>
+        <div class="floating-cart-text">
+          <span class="floating-cart-title">Ver Sacola</span>
+          <span class="floating-cart-items-label" id="floatingCartItemsLabel">0 itens adicionados</span>
+        </div>
+      </div>
+
+      <div class="floating-cart-right">
+        <span class="floating-cart-total" id="floatingCartTotal">R$ 0,00</span>
+        <svg class="chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+    </button>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL / DRAWER DA SACOLA (CHECKOUT INTELIGENTE) -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" id="cartModalBackdrop" aria-hidden="true">
+    <div class="cart-drawer-sheet" id="cartDrawer" role="dialog" aria-modal="true" aria-labelledby="cartDrawerTitle">
+      
+      <!-- Cabeçalho do Carrinho -->
+      <div class="drawer-header">
+        <div class="drawer-header-info">
+          <h2 id="cartDrawerTitle">Sua Sacola</h2>
+          <span class="drawer-item-counter" id="cartModalItemCount">0 itens</span>
+        </div>
+        <div class="drawer-header-actions">
+          <button type="button" class="btn-clear-cart" id="btnClearCart" title="Limpar todos os itens">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            <span>Limpar</span>
+          </button>
+          <button type="button" class="btn-close-drawer" id="btnCloseCart" aria-label="Fechar sacola">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Conteúdo com Rolagem -->
+      <div class="drawer-body">
+        
+        <!-- Lista de Itens do Pedido -->
+        <div class="cart-items-section">
+          <h3 class="section-subtitle">Itens Selecionados</h3>
+          <div class="cart-items-list" id="cartItemsList">
+            <!-- Renderizado dinamicamente via script.js -->
+          </div>
+          
+          <button type="button" class="btn-add-more" id="btnAddMoreItems">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Adicionar mais burgers e itens ao pedido
+          </button>
+        </div>
+
+        <!-- Seção de Cupom Promocional -->
+        <div class="coupon-box">
+          <div class="coupon-input-wrapper">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+            <input type="text" id="couponInput" placeholder="Possui cupom? (ex: CAILU10)" uppercase>
+            <button type="button" class="btn-apply-coupon" id="btnApplyCoupon">Aplicar</button>
+          </div>
+          <small class="coupon-feedback" id="couponFeedback"></small>
+        </div>
+
+        <!-- Formulário de Checkout & Endereço -->
+        <form class="checkout-form" id="checkoutForm" onsubmit="event.preventDefault();">
+          
+          <!-- Tipo de Entrega -->
+          <div class="form-group-block">
+            <label class="form-section-title">Como deseja receber seu pedido?</label>
+            <div class="delivery-type-selector">
+              <label class="delivery-radio-card" id="optionDeliveryLabel">
+                <input type="radio" name="orderType" value="delivery" checked id="orderTypeDelivery">
+                <div class="radio-card-content">
+                  <span class="radio-emoji">🛵</span>
+                  <div class="radio-texts">
+                    <strong>Entrega (Delivery)</strong>
+                    <span class="delivery-cost-tag" id="deliveryFeeLabel">Taxa: R$ 6,00</span>
+                  </div>
+                </div>
+              </label>
+
+              <label class="delivery-radio-card" id="optionTakeawayLabel">
+                <input type="radio" name="orderType" value="retirada" id="orderTypeTakeaway">
+                <div class="radio-card-content">
+                  <span class="radio-emoji">🏪</span>
+                  <div class="radio-texts">
+                    <strong>Retirar no Local</strong>
+                    <span class="delivery-cost-tag free">Grátis (Sem taxa)</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Dados do Cliente -->
+          <div class="form-group-block">
+            <label class="form-section-title">Seus Dados de Contato</label>
+            
+            <div class="form-field">
+              <label for="customerName">Seu Nome Completo *</label>
+              <div class="input-with-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <input type="text" id="customerName" placeholder="Ex: Lucas Silva" required autocomplete="name">
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="customerPhone">Seu WhatsApp (com DDD) *</label>
+              <div class="input-with-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <input type="tel" id="customerPhone" placeholder="(31) 99999-9999" required autocomplete="tel">
+              </div>
+            </div>
+          </div>
+
+          <!-- Campos de Endereço (Exibidos apenas para Delivery) -->
+          <div class="form-group-block" id="addressFieldsContainer">
+            <label class="form-section-title">Endereço de Entrega</label>
+
+            <div class="form-row-2">
+              <div class="form-field flex-3">
+                <label for="customerStreet">Rua / Avenida *</label>
+                <input type="text" id="customerStreet" placeholder="Ex: Rua Platina" autocomplete="address-line1">
+              </div>
+              <div class="form-field flex-1">
+                <label for="customerNumber">Número *</label>
+                <input type="text" id="customerNumber" placeholder="Nº 123">
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-field flex-2">
+                <label for="customerNeighborhood">Bairro *</label>
+                <input type="text" id="customerNeighborhood" placeholder="Ex: Jardim América" autocomplete="address-level2">
+              </div>
+              <div class="form-field flex-2">
+                <label for="customerComplement">Complemento / Ap.</label>
+                <input type="text" id="customerComplement" placeholder="Ex: Apto 302, Bloco A">
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="customerReference">Ponto de Referência</label>
+              <input type="text" id="customerReference" placeholder="Ex: Próximo à praça ou supermercado">
+            </div>
+          </div>
+
+          <!-- Forma de Pagamento -->
+          <div class="form-group-block">
+            <label class="form-section-title">Forma de Pagamento</label>
+            <div class="payment-options-grid">
+              
+              <label class="payment-option-card">
+                <input type="radio" name="paymentMethod" value="PIX" checked id="payPix">
+                <div class="pay-card-body">
+                  <span class="pay-icon">⚡</span>
+                  <strong>PIX</strong>
+                  <small>Chave instantânea</small>
+                </div>
+              </label>
+
+              <label class="payment-option-card">
+                <input type="radio" name="paymentMethod" value="Cartão de Crédito" id="payCredit">
+                <div class="pay-card-body">
+                  <span class="pay-icon">💳</span>
+                  <strong>Crédito</strong>
+                  <small>Na maquininha</small>
+                </div>
+              </label>
+
+              <label class="payment-option-card">
+                <input type="radio" name="paymentMethod" value="Cartão de Débito" id="payDebit">
+                <div class="pay-card-body">
+                  <span class="pay-icon">💳</span>
+                  <strong>Débito</strong>
+                  <small>Na maquininha</small>
+                </div>
+              </label>
+
+              <label class="payment-option-card">
+                <input type="radio" name="paymentMethod" value="Dinheiro" id="payCash">
+                <div class="pay-card-body">
+                  <span class="pay-icon">💵</span>
+                  <strong>Dinheiro</strong>
+                  <small>Com troco</small>
+                </div>
+              </label>
+
+            </div>
+
+            <!-- Campo dinâmico de troco se Dinheiro -->
+            <div class="form-field mt-3" id="changeFieldContainer" style="display: none;">
+              <label for="customerChange">Precisa de troco para quanto?</label>
+              <div class="input-with-icon">
+                <span class="currency-prefix">R$</span>
+                <input type="number" id="customerChange" placeholder="Ex: 100,00" step="0.50" min="0">
+              </div>
+              <small class="form-hint">Deixe em branco se tiver o valor exato trocado.</small>
+            </div>
+
+            <!-- Aviso do PIX -->
+            <div class="pix-info-alert" id="pixAlertBox">
+              <div class="pix-alert-header">
+                <span class="pix-tag">Chave PIX da Cailu Burger:</span>
+                <button type="button" class="btn-copy-pix" id="btnCopyPix" title="Copiar Chave PIX">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  Copiar
+                </button>
+              </div>
+              <code class="pix-code" id="pixKeyValue">31982853457</code>
+              <small>O comprovante poderá ser anexado na conversa do WhatsApp após o envio do pedido.</small>
+            </div>
+          </div>
+
+          <!-- Observações Gerais -->
+          <div class="form-group-block">
+            <label for="orderNotes" class="form-section-title">Observações Gerais do Pedido</label>
+            <textarea 
+              id="orderNotes" 
+              rows="2" 
+              placeholder="Ex: Ponto da carne ao ponto/bem passado, tocar o interfone, embalar molhos separados..."
+            ></textarea>
+          </div>
+
+          <!-- Resumo Financeiro da Compra -->
+          <div class="order-summary-box">
+            <div class="summary-line">
+              <span>Subtotal dos itens:</span>
+              <strong id="modalSubtotal">R$ 0,00</strong>
+            </div>
+
+            <div class="summary-line" id="discountLine" style="display: none;">
+              <span class="text-success">Desconto aplicado:</span>
+              <strong class="text-success" id="modalDiscount">- R$ 0,00</strong>
+            </div>
+
+            <div class="summary-line">
+              <span>Taxa de Entrega:</span>
+              <strong id="modalDeliveryFee">R$ 6,00</strong>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <div class="summary-line total-line">
+              <div>
+                <span class="total-label">Total do Pedido:</span>
+                <span class="total-min-order-warning" id="minOrderWarning" style="display: none;">
+                  ⚠️ Pedido mínimo: R$ 20,00
+                </span>
+              </div>
+              <strong class="total-price-highlight" id="modalGrandTotal">R$ 0,00</strong>
+            </div>
+          </div>
+
+          <!-- Botão Principal de Finalização no WhatsApp -->
+          <div class="drawer-footer-actions">
+            <button type="button" class="btn-whatsapp-finish" id="btnFinishOrder">
+              <div class="btn-wa-inner">
+                <svg class="wa-icon-svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.301-.15-1.777-.877-2.052-.977-.275-.1-.475-.15-.675.15-.2.301-.775.977-.95 1.177-.175.2-.351.226-.651.075s-1.269-.468-2.417-1.492c-.893-.797-1.496-1.782-1.672-2.083-.175-.3-.018-.463.132-.612.135-.135.301-.35.451-.525.15-.176.2-.301.301-.502.1-.2.05-.376-.025-.526-.075-.15-.675-1.628-.925-2.232-.244-.588-.492-.508-.675-.518-.175-.008-.375-.01-.575-.01s-.526.075-.802.376c-.275.3-1.052 1.028-1.052 2.508 0 1.48 1.077 2.91 1.227 3.11.15.2 2.12 3.238 5.136 4.542.718.31 1.278.496 1.716.635.72.23 1.375.197 1.894.12.578-.087 1.777-.727 2.027-1.43.25-.702.25-1.304.175-1.43-.075-.125-.275-.2-.576-.35zM12.04 2C6.52 2 2.04 6.48 2.04 12c0 1.83.49 3.55 1.34 5.03L2 22l5.12-1.34c1.43.78 3.06 1.22 4.88 1.22 5.52 0 10-4.48 10-10S17.56 2 12.04 2zm0 18.2c-1.6 0-3.08-.43-4.36-1.19l-.31-.19-3.04.8.81-2.96-.21-.33A8.15 8.15 0 0 1 3.84 12c0-4.52 3.68-8.2 8.2-8.2 4.52 0 8.2 3.68 8.2 8.2s-3.68 8.2-8.2 8.2z"/>
+                </svg>
+                <div class="wa-btn-labels">
+                  <span class="wa-btn-title">Finalizar Pedido no WhatsApp</span>
+                  <span class="wa-btn-subtitle">Clique para enviar direto para a equipe Cailu Burger</span>
+                </div>
+              </div>
+            </button>
+            <p class="privacy-note">
+              🔒 Seus dados ficam salvos com segurança neste navegador para agilizar seus próximos pedidos.
+            </p>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL DE DETALHES DO PRODUTO (FOTO AMPLIADA & OBSERVAÇÃO) -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" id="productModalBackdrop" aria-hidden="true">
+    <div class="product-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalProductTitle">
+      <button type="button" class="btn-close-product-modal" id="btnCloseProductModal" aria-label="Fechar detalhes">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+
+      <div class="product-modal-image-wrapper">
+        <img id="modalProductImage" src="" alt="Burger">
+        <span class="product-modal-badge" id="modalProductBadge" style="display: none;"></span>
+      </div>
+
+      <div class="product-modal-content">
+        <h3 class="product-modal-title" id="modalProductTitle">Nome do Burger</h3>
+        <p class="product-modal-serves" id="modalProductServes">Individual</p>
+        <p class="product-modal-desc" id="modalProductDesc">Descrição detalhada</p>
+
+        <!-- Campo de Observação Específica do Item -->
+        <div class="form-field mt-3">
+          <label for="modalProductNotes">Observações para este item (opcional):</label>
+          <input type="text" id="modalProductNotes" placeholder="Ex: Carne ao ponto, sem picles, molho grill à parte...">
+        </div>
+
+        <div class="product-modal-actions">
+          <div class="quantity-controller large">
+            <button type="button" class="qty-btn" id="modalQtyMinus" aria-label="Diminuir">-</button>
+            <span class="qty-display" id="modalQtyDisplay">1</span>
+            <button type="button" class="qty-btn" id="modalQtyPlus" aria-label="Aumentar">+</button>
+          </div>
+
+          <button type="button" class="btn btn-primary flex-1" id="btnModalAddToCart">
+            <span id="modalAddBtnLabel">Adicionar</span>
+            <span class="btn-price-tag" id="modalAddBtnPrice">R$ 0,00</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTAINER DE NOTIFICAÇÕES (TOAST FEEDBACK) -->
+  <!-- ========================================================================= -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- SCRIPTS DA APLICAÇÃO -->
+  <script src="products.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
