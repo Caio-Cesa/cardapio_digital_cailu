@@ -16,7 +16,8 @@ const AppState = {
   selectedProductForModal: null,
   modalQuantity: 1,
   selectedOptionType: null, // Ex: "Zero Açúcar" ou "Normal (Original)"
-  selectedOptionSize: null   // Ex: { id: "Lata 350ml", name: "Lata 350ml", price: 6.50 }
+  selectedOptionSize: null,  // Ex: { id: "Lata 350ml", name: "Lata 350ml", price: 6.50 }
+  selectedCustomGroupOptions: {} // Ex: { "bebida_combo": optionObj }
 };
 
 // Chaves do LocalStorage
@@ -508,73 +509,148 @@ window.openProductModal = function (productId) {
   const sizeGroup = document.getElementById("modalSizeGroup");
   const sizeChips = document.getElementById("modalSizeChips");
   const typeTitle = document.getElementById("modalTypeGroupTitle");
+  const customGroupsContainer = document.getElementById("modalCustomGroupsContainer");
+
+  // Limpar grupos customizados anteriores
+  customGroupsContainer.innerHTML = "";
+  AppState.selectedCustomGroupOptions = {};
 
   if (prod.hasOptions) {
     optionsWrapper.style.display = "flex";
 
-    // 1. Grupo de Versão (Normal / Zero Açúcar / Com ou Sem Gás)
-    if (prod.types && prod.types.length > 0) {
-      typeGroup.style.display = "flex";
-      typeTitle.textContent = prod.optionTypeLabel || "Escolha a Versão";
-      typeChips.innerHTML = "";
-
-      // Padrão selecionado: o primeiro
-      AppState.selectedOptionType = prod.types[0].name;
-
-      prod.types.forEach((typeObj, index) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `option-chip-btn ${index === 0 ? "selected" : ""}`;
-        btn.textContent = typeObj.name;
-
-        btn.addEventListener("click", () => {
-          typeChips.querySelectorAll(".option-chip-btn").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          AppState.selectedOptionType = typeObj.name;
-        });
-
-        typeChips.appendChild(btn);
-      });
-    } else {
+    // Verifica se é combo com optionGroups (estilo iFood)
+    if (prod.optionGroups && prod.optionGroups.length > 0) {
+      // Esconder chips tradicionais para combos com optionGroups
       typeGroup.style.display = "none";
+      sizeGroup.style.display = "none";
       AppState.selectedOptionType = null;
-    }
+      AppState.selectedOptionSize = null;
 
-    // 2. Grupo de Tamanho / Opções (Bebidas, Porções de Batata, etc.)
-    const availableSizes = prod.sizes || prod.options;
-    if (availableSizes && availableSizes.length > 0) {
-      sizeGroup.style.display = "flex";
-      const sizeTitleEl = document.getElementById("modalSizeGroupTitle");
-      if (sizeTitleEl) {
-        sizeTitleEl.textContent = prod.optionSizeLabel || (!prod.types ? prod.optionTypeLabel : "Escolha o Tamanho") || "Escolha o Tamanho";
-      }
-      sizeChips.innerHTML = "";
+      // Renderizar cada grupo de opções estilo iFood
+      prod.optionGroups.forEach(group => {
+        const defaultOpt = group.options.find(o => o.default) || group.options[0];
+        AppState.selectedCustomGroupOptions[group.id] = defaultOpt;
 
-      // Padrão selecionado
-      const defaultSize = availableSizes.find(s => s.default) || availableSizes[0];
-      AppState.selectedOptionSize = defaultSize;
-
-      availableSizes.forEach(sizeObj => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `option-chip-btn ${sizeObj.id === defaultSize.id ? "selected" : ""}`;
-        btn.innerHTML = `
-          <span>${sizeObj.name}</span>
-          <span class="chip-price-tag">${formatMoney(sizeObj.price)}</span>
+        const groupEl = document.createElement("div");
+        groupEl.className = "ifood-option-group";
+        groupEl.innerHTML = `
+          <div class="ifood-group-header">
+            <div>
+              <span class="ifood-group-title">${group.title}</span>
+              <span class="ifood-group-subtitle">${group.subtitle || ""}</span>
+            </div>
+            ${group.required ? '<span class="required-badge">Obrigatório</span>' : ''}
+          </div>
+          <div class="ifood-options-list" data-group-id="${group.id}"></div>
         `;
 
-        btn.addEventListener("click", () => {
-          sizeChips.querySelectorAll(".option-chip-btn").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          AppState.selectedOptionSize = sizeObj;
-          updateModalPrice();
+        const listEl = groupEl.querySelector(".ifood-options-list");
+
+        group.options.forEach(opt => {
+          const card = document.createElement("div");
+          card.className = `ifood-option-card ${opt.id === defaultOpt.id ? "selected" : ""}`;
+          card.dataset.optionId = opt.id;
+
+          const priceTag = (opt.priceDelta && opt.priceDelta > 0)
+            ? `<span class="ifood-option-price-tag">+ ${formatMoney(opt.priceDelta)}</span>`
+            : `<span class="ifood-option-price-tag free">Incluso</span>`;
+
+          card.innerHTML = `
+            <div class="ifood-option-left">
+              <div class="ifood-option-thumb-wrapper">
+                <img class="ifood-option-thumb" src="${opt.image}" alt="${opt.name}" loading="lazy">
+              </div>
+              <div class="ifood-option-info">
+                <span class="ifood-option-name">${opt.name}</span>
+                <span class="ifood-option-desc">${opt.description || ""}</span>
+              </div>
+            </div>
+            <div class="ifood-option-right">
+              ${priceTag}
+              <div class="ifood-radio-circle">
+                <div class="ifood-radio-dot"></div>
+              </div>
+            </div>
+          `;
+
+          card.addEventListener("click", () => {
+            listEl.querySelectorAll(".ifood-option-card").forEach(c => c.classList.remove("selected"));
+            card.classList.add("selected");
+            AppState.selectedCustomGroupOptions[group.id] = opt;
+            updateModalPrice();
+          });
+
+          listEl.appendChild(card);
         });
 
-        sizeChips.appendChild(btn);
+        customGroupsContainer.appendChild(groupEl);
       });
+
     } else {
-      sizeGroup.style.display = "none";
-      AppState.selectedOptionSize = null;
+      // Produtos com opções tradicionais (Bebidas individuais, Batata, etc.)
+
+      // 1. Grupo de Versão (Normal / Zero Açúcar / Com ou Sem Gás)
+      if (prod.types && prod.types.length > 0) {
+        typeGroup.style.display = "flex";
+        typeTitle.textContent = prod.optionTypeLabel || "Escolha a Versão";
+        typeChips.innerHTML = "";
+
+        AppState.selectedOptionType = prod.types[0].name;
+
+        prod.types.forEach((typeObj, index) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = `option-chip-btn ${index === 0 ? "selected" : ""}`;
+          btn.textContent = typeObj.name;
+
+          btn.addEventListener("click", () => {
+            typeChips.querySelectorAll(".option-chip-btn").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            AppState.selectedOptionType = typeObj.name;
+          });
+
+          typeChips.appendChild(btn);
+        });
+      } else {
+        typeGroup.style.display = "none";
+        AppState.selectedOptionType = null;
+      }
+
+      // 2. Grupo de Tamanho / Opções (Bebidas, Porções de Batata, etc.)
+      const availableSizes = prod.sizes || prod.options;
+      if (availableSizes && availableSizes.length > 0) {
+        sizeGroup.style.display = "flex";
+        const sizeTitleEl = document.getElementById("modalSizeGroupTitle");
+        if (sizeTitleEl) {
+          sizeTitleEl.textContent = prod.optionSizeLabel || (!prod.types ? prod.optionTypeLabel : "Escolha o Tamanho") || "Escolha o Tamanho";
+        }
+        sizeChips.innerHTML = "";
+
+        const defaultSize = availableSizes.find(s => s.default) || availableSizes[0];
+        AppState.selectedOptionSize = defaultSize;
+
+        availableSizes.forEach(sizeObj => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = `option-chip-btn ${sizeObj.id === defaultSize.id ? "selected" : ""}`;
+          btn.innerHTML = `
+            <span>${sizeObj.name}</span>
+            <span class="chip-price-tag">${formatMoney(sizeObj.price)}</span>
+          `;
+
+          btn.addEventListener("click", () => {
+            sizeChips.querySelectorAll(".option-chip-btn").forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            AppState.selectedOptionSize = sizeObj;
+            updateModalPrice();
+          });
+
+          sizeChips.appendChild(btn);
+        });
+      } else {
+        sizeGroup.style.display = "none";
+        AppState.selectedOptionSize = null;
+      }
     }
 
   } else {
@@ -601,7 +677,17 @@ function updateModalPrice() {
   const prod = AppState.selectedProductForModal;
   if (!prod) return;
 
-  const unitPrice = AppState.selectedOptionSize ? AppState.selectedOptionSize.price : prod.price;
+  let unitPrice = AppState.selectedOptionSize ? AppState.selectedOptionSize.price : prod.price;
+
+  // Soma priceDelta de optionGroups selecionados (combos estilo iFood)
+  if (prod.optionGroups && prod.optionGroups.length > 0) {
+    Object.values(AppState.selectedCustomGroupOptions).forEach(opt => {
+      if (opt && opt.priceDelta) {
+        unitPrice += opt.priceDelta;
+      }
+    });
+  }
+
   const total = unitPrice * AppState.modalQuantity;
 
   document.getElementById("modalQtyDisplay").textContent = AppState.modalQuantity;
@@ -696,7 +782,8 @@ function addCustomItemToCart(itemObj) {
       price: itemObj.price,
       quantity: itemObj.quantity,
       image: itemObj.image,
-      notes: itemObj.notes.trim()
+      notes: itemObj.notes.trim(),
+      optionsSummary: itemObj.optionsSummary || []
     });
   }
 
@@ -826,11 +913,18 @@ function updateCartUI() {
       const itemSubtotal = item.price * item.quantity;
       const notesHtml = item.notes ? `<div class="cart-item-notes">Obs: ${item.notes}</div>` : "";
 
+      // Badges de opções customizadas (combos com optionGroups)
+      let optionsBadgesHtml = "";
+      if (item.optionsSummary && item.optionsSummary.length > 0) {
+        optionsBadgesHtml = `<div class="cart-item-options-list">${item.optionsSummary.map(s => `<span class="cart-item-option-badge">${s}</span>`).join("")}</div>`;
+      }
+
       return `
         <div class="cart-item-row">
           <img src="${item.image}" alt="${item.name}" class="cart-item-thumb">
           <div class="cart-item-info">
             <h4 class="cart-item-title">${item.name}</h4>
+            ${optionsBadgesHtml}
             ${notesHtml}
             <span class="cart-item-price-each">${item.quantity}x ${formatMoney(item.price)}</span>
           </div>
@@ -1017,6 +1111,11 @@ function finishOrderWhatsApp() {
   AppState.cart.forEach((item, idx) => {
     const itemTotal = item.price * item.quantity;
     message += `${idx + 1}. ${item.quantity}x ${stripEmojis(item.name)} - ${formatMoney(itemTotal)}\n`;
+    if (item.optionsSummary && item.optionsSummary.length > 0) {
+      item.optionsSummary.forEach(summary => {
+        message += `   - ${stripEmojis(summary)}\n`;
+      });
+    }
     if (item.notes) {
       message += `   Obs: ${stripEmojis(item.notes)}\n`;
     }
@@ -1164,15 +1263,48 @@ function setupEventListeners() {
     updateModalPrice();
   });
 
-  // Botão Adicionar à Sacola no Modal (Suporta produtos simples e bebidas com opções)
+  // Botão Adicionar à Sacola no Modal (Suporta produtos simples, bebidas com opções e combos com optionGroups)
   document.getElementById("btnModalAddToCart").addEventListener("click", () => {
     const prod = AppState.selectedProductForModal;
     if (!prod) return;
 
     const notes = document.getElementById("modalProductNotes").value;
 
-    if (prod.hasOptions) {
-      // Produto com opções (Bebidas)
+    if (prod.hasOptions && prod.optionGroups && prod.optionGroups.length > 0) {
+      // Combo com optionGroups estilo iFood
+      const optionsSummary = [];
+      let extraDelta = 0;
+      let uniqueIdParts = [prod.id];
+
+      prod.optionGroups.forEach(group => {
+        const selectedOpt = AppState.selectedCustomGroupOptions[group.id];
+        if (selectedOpt) {
+          optionsSummary.push(`${group.title}: ${selectedOpt.name}`);
+          uniqueIdParts.push(selectedOpt.id);
+          if (selectedOpt.priceDelta) {
+            extraDelta += selectedOpt.priceDelta;
+          }
+        }
+      });
+
+      const unitPrice = prod.price + extraDelta;
+      const uniqueId = uniqueIdParts.join("_");
+
+      addCustomItemToCart({
+        id: uniqueId,
+        originalId: prod.id,
+        name: prod.name,
+        price: unitPrice,
+        quantity: AppState.modalQuantity,
+        image: prod.image,
+        notes: notes,
+        optionsSummary: optionsSummary
+      });
+
+      showToast(`Adicionado: ${prod.name}`);
+
+    } else if (prod.hasOptions) {
+      // Produto com opções tradicionais (Bebidas individuais)
       const typePart = AppState.selectedOptionType ? AppState.selectedOptionType : "";
       const sizePart = AppState.selectedOptionSize ? AppState.selectedOptionSize.name : "";
       const optionsText = [typePart, sizePart].filter(Boolean).join(" - ");
@@ -1193,7 +1325,7 @@ function setupEventListeners() {
 
       showToast(`Adicionado: ${customName}`);
     } else {
-      // Produto normal (Burgers, Combos, etc.)
+      // Produto normal (Burgers, etc.)
       addToCart(prod, AppState.modalQuantity, notes);
       showToast(`Adicionado: ${prod.name}`);
     }

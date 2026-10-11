@@ -44,6 +44,156 @@ const CATEGORIES = [
   { id: "acompanhamentos", name: "Acompanhamentos", icon: "🍟" }
 ];
 
+// Opções compartilhadas para seleção estilo iFood nos combos
+const COMBO_BEVERAGE_OPTIONS = [
+  {
+    id: "coca-600-normal",
+    name: "Coca-Cola 600ml (Normal)",
+    description: "Garrafa 600ml estupidamente gelada",
+    image: "img/logo-coca-cola.jpg",
+    priceDelta: 0,
+    default: true
+  },
+  {
+    id: "coca-600-zero",
+    name: "Coca-Cola 600ml (Zero Açúcar)",
+    description: "Garrafa 600ml estupidamente gelada",
+    image: "img/logo-coca-cola.jpg",
+    priceDelta: 0
+  },
+  {
+    id: "guarana-1l",
+    name: "Guaraná Antarctica 1 Litro",
+    description: "Garrafa 1 Litro bem geladinha",
+    image: "img/logo-guarana.jpg",
+    priceDelta: 0
+  }/*,
+  {
+    id: "2x-coca-lata",
+    name: "2x Coca-Cola Lata 350ml (Normal)",
+    description: "Duas latas de 350ml estupidamente geladas",
+    image: "img/logo-coca-cola.jpg",
+    priceDelta: 0
+  },
+  {
+    id: "2x-coca-zero-lata",
+    name: "2x Coca-Cola Lata 350ml (Zero)",
+    description: "Duas latas zero açúcar bem geladas",
+    image: "img/logo-coca-cola.jpg",
+    priceDelta: 0
+  },
+  {
+    id: "2x-guarana-lata",
+    name: "2x Guaraná Antarctica Lata 350ml",
+    description: "Duas latas de guaraná bem geladinhas",
+    image: "img/logo-guarana.jpg",
+    priceDelta: 0
+  },
+  {
+    id: "2x-fanta-lata",
+    name: "2x Fanta Guaraná Lata 350ml",
+    description: "Duas latas de Fanta Guaraná geladinhas",
+    image: "img/logo-fanta.jpg",
+    priceDelta: 0
+  }*/
+];
+
+const SMASH_BURGER_OPTIONS_1 = [
+  {
+    id: "smash-classico-1",
+    name: "Smash Clássico Irresistível",
+    description: "Smash, queijo prato derretido, alface, tomate e molho grill",
+    image: "img/smash-classico-irresistivel.jpeg",
+    priceDelta: 0,
+    default: true
+  },
+  {
+    id: "smash-bacon-melt-1",
+    name: "Smash Bacon Melt",
+    description: "Smash crocante, cheddar, bacon caramelizado e molho grill",
+    image: "img/smash-bacon-melt.jpeg",
+    priceDelta: 0
+  },
+  {
+    id: "smash-crispy-1",
+    name: "Smash Crispy",
+    description: "Smash, muito cheddar cremoso e cebolas empanadas",
+    image: "img/smash-crispy.jpeg",
+    priceDelta: 0
+  },
+  {
+    id: "smash-cebola-caramelizada-1",
+    name: "Smash Cebola Caramelizada",
+    description: "Smash, queijo prato, cebola caramelizada e molho grill",
+    image: "img/smash-cebola-caramelizada.jpeg",
+    priceDelta: 0
+  }
+];
+
+const SMASH_BURGER_OPTIONS_2 = [
+  {
+    id: "smash-classico-2",
+    name: "Smash Clássico Irresistível",
+    description: "Smash, queijo prato derretido, alface, tomate e molho grill",
+    image: "img/smash-classico-irresistivel.jpeg",
+    priceDelta: 0
+  },
+  {
+    id: "smash-bacon-melt-2",
+    name: "Smash Bacon Melt",
+    description: "Smash crocante, cheddar, bacon caramelizado e molho grill",
+    image: "img/smash-bacon-melt.jpeg",
+    priceDelta: 0,
+    default: true
+  },
+  {
+    id: "smash-crispy-2",
+    name: "Smash Crispy",
+    description: "Smash, muito cheddar cremoso e cebolas empanadas",
+    image: "img/smash-crispy.jpeg",
+    priceDelta: 0
+  },
+  {
+    id: "smash-cebola-caramelizada-2",
+    name: "Smash Cebola Caramelizada",
+    description: "Smash, queijo prato, cebola caramelizada e molho grill",
+    image: "img/smash-cebola-caramelizada.jpeg",
+    priceDelta: 0
+  }
+];
+
+const SMASH_ECONOMICO_DRINK_OPTIONS = [
+  {
+    id: "coca-200-normal",
+    name: "Coca-Cola Pet 200ml (Normal)",
+    description: "Garrafinha 200ml estupidamente gelada",
+    image: "img/logo-coca-cola.jpg",
+    priceDelta: 0,
+    default: true
+  },
+  {
+    id: "coca-200-zero",
+    name: "Coca-Cola Pet 200ml (Zero Açúcar)",
+    description: "Garrafinha 200ml zero açúcar bem gelada",
+    image: "img/logo-coca-cola.jpg",
+    priceDelta: 0
+  },
+  {
+    id: "guarana-200",
+    name: "Guaraná Antarctica Pet 200ml",
+    description: "Garrafinha 200ml bem geladinha",
+    image: "img/logo-guarana.jpg",
+    priceDelta: 0
+  },
+  {
+    id: "pepsi-200",
+    name: "Pepsi Pet 200ml",
+    description: "Garrafinha 200ml bem gelada",
+    image: "img/logo-pepsi.jpg",
+    priceDelta: 0
+  }
+];
+
 // Lista oficial de produtos com fotos reais e opções inteligentes
 const PRODUCTS = [
   // --- COMBOS ARTESANAIS OFICIAIS (SEU ARTESANAL DE VERDADE!) ---
@@ -51,66 +201,137 @@ const PRODUCTS = [
     id: "combo-duplo",
     category: "promocoes",
     name: "Combo Duplo",
-    subtitle: "2x Cailu Love Duplo + 1x Batata Grande 300g + 2x Refris Lata 350ml",
-    composition: "2x Cailu Love Duplo + 1x Batata Frita Grande 300g + 2x Refrigerantes Lata 350ml.",
-    description: "COMPOSIÇÃO: 2x Cailu Love Duplo + 1x Batata Frita Grande 300g + 2x Refrigerantes Lata 350ml.\n\nA FOME TÁ GIGANTE POR AÍ? Para os casais ou amigos que não brincam em serviço quando o assunto é hambúrguer de verdade. São 4 blends de carne grelhados na chapa esperando por vocês!",
+    subtitle: "2x Cailu Love Duplo + 1x Batata Grande 300g + Bebida à sua escolha",
+    composition: "2x Cailu Love Duplo + 1x Batata Frita Grande 300g + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
+    description: "COMPOSIÇÃO: 2x Cailu Love Duplo + 1x Batata Frita Grande 300g + Bebida à sua escolha.\n\nA FOME TÁ GIGANTE POR AÍ? Para os casais ou amigos que não brincam em serviço quando o assunto é hambúrguer de verdade. São 4 blends de carne grelhados na chapa esperando por vocês!",
     price: 87.90,
     originalPrice: 107.70,
     image: "img/combo-duplo.jpeg",
     badge: "Super Combo Duplo",
-    serves: "Serve 2 pessoas"
+    serves: "Serve 2 pessoas",
+    hasOptions: true,
+    optionGroups: [
+      {
+        id: "bebida_combo",
+        title: "Escolha a Bebida do Combo",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: COMBO_BEVERAGE_OPTIONS
+      }
+    ]
   },
   {
     id: "combo-misto",
     category: "promocoes",
     name: "Combo Misto",
-    subtitle: "Duplo & Tradicional + 1x Batata Grande 300g + 2x Refris Lata 350ml",
-    composition: "1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande 300g + 2x Refrigerantes Lata 350ml.",
-    description: "COMPOSIÇÃO: 1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande 300g + 2x Refrigerantes Lata 350ml.\n\nO COMBO PERFEITO NÃO EXIS... PERA, EXISTE SIM! Aquele empasse clássico: um quer um burger monstro e o outro quer um clássico perfeito? O Combo Misto resolve a indecisão do casal com o melhor dos dois mundos.",
+    subtitle: "Duplo & Tradicional + 1x Batata Grande 300g + Bebida à sua escolha",
+    composition: "1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande 300g + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
+    description: "COMPOSIÇÃO: 1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande 300g + Bebida à sua escolha.\n\nO COMBO PERFEITO NÃO EXIS... PERA, EXISTE SIM! Aquele empasse clássico: um quer um burger monstro e o outro quer um clássico perfeito? O Combo Misto resolve a indecisão do casal com o melhor dos dois mundos.",
     price: 74.90,
     originalPrice: 94.70,
     image: "img/combo-misto.jpeg",
     badge: "O Mais Pedido",
-    serves: "Serve 2 pessoas"
+    serves: "Serve 2 pessoas",
+    hasOptions: true,
+    optionGroups: [
+      {
+        id: "bebida_combo",
+        title: "Escolha a Bebida do Combo",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: COMBO_BEVERAGE_OPTIONS
+      }
+    ]
   },
   {
     id: "combo-mix-premium",
     category: "promocoes",
     name: "Combo Mix Premium",
-    subtitle: "Bacon Love & Cailu Crispy + 1x Batata Grande + 2x Refris Lata 350ml",
-    composition: "1x Bacon Love + 1x Cailu Crispy + 1x Batata Frita Grande + 2x Refrigerantes Lata 350ml.",
-    description: "COMPOSIÇÃO: 1x Bacon Love + 1x Cailu Crispy + 1x Batata Frita Grande + 2x Refrigerantes Lata 350ml.\n\nSESSÃO PREMIUM NA CAILU BURGER! Se você ama texturas marcantes, a crocância perfeita do bacon e cebola crispy, esse combo foi feito sob medida para a sua noite.",
+    subtitle: "Bacon Love & Cailu Crispy + 1x Batata Grande + Bebida à sua escolha",
+    composition: "1x Bacon Love + 1x Cailu Crispy + 1x Batata Frita Grande + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
+    description: "COMPOSIÇÃO: 1x Bacon Love + 1x Cailu Crispy + 1x Batata Frita Grande + Bebida à sua escolha.\n\nSESSÃO PREMIUM NA CAILU BURGER! Se você ama texturas marcantes, a crocância perfeita do bacon e cebola crispy, esse combo foi feito sob medida para a sua noite.",
     price: 74.90,
     originalPrice: 95.70,
     image: "img/combo-mix-premium.jpeg",
     badge: "Sessão Premium",
-    serves: "Serve 2 pessoas"
+    serves: "Serve 2 pessoas",
+    hasOptions: true,
+    optionGroups: [
+      {
+        id: "bebida_combo",
+        title: "Escolha a Bebida do Combo",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: COMBO_BEVERAGE_OPTIONS
+      }
+    ]
   },
   {
     id: "combo-smash-prime-80g",
     category: "promocoes",
     name: "Combo Smash Prime - 80g",
-    subtitle: "2x Burgers Smash + 1x Batata Grande + 2x Refris Lata 350ml",
-    composition: "02 Burgers Smash à sua escolha (Clássico, Bacon Melt ou Crispy!) + 1x Batata Frita Grande + 2x Refrigerantes Lata 350ml.",
-    description: "COMPOSIÇÃO: 02 Burgers Smash à sua escolha (Clássico, Bacon Melt ou Crispy!) + 1x Batata Frita Grande + 2x Refrigerantes Lata 350ml.\n\nA DUPLA DINÂMICA DOS SMASHES! Aquela combinação perfeita que só a nossa chapa sabe fazer. Monte o combo do seu jeito escolhendo os seus dois Smashes favoritos de 80g! (Vale repetir o sabor, hein?).",
+    subtitle: "2x Burgers Smash + 1x Batata Grande + Bebida à sua escolha",
+    composition: "02 Burgers Smash à sua escolha (Clássico, Bacon Melt ou Crispy!) + 1x Batata Frita Grande + Bebida à sua escolha.",
+    description: "COMPOSIÇÃO: 02 Burgers Smash à sua escolha (Clássico, Bacon Melt ou Crispy!) + 1x Batata Frita Grande + Bebida à sua escolha.\n\nA DUPLA DINÂMICA DOS SMASHES! Aquela combinação perfeita que só a nossa chapa sabe fazer. Monte o combo do seu jeito escolhendo os seus dois Smashes favoritos de 80g!",
     price: 57.90,
     originalPrice: 71.90,
     image: "img/combo-smash-prime.jpeg",
     badge: "Dupla Smash",
-    serves: "Serve 2 pessoas"
+    serves: "Serve 2 pessoas",
+    hasOptions: true,
+    optionGroups: [
+      {
+        id: "smash_1",
+        title: "Escolha o 1º Burger Smash",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: SMASH_BURGER_OPTIONS_1
+      },
+      {
+        id: "smash_2",
+        title: "Escolha o 2º Burger Smash",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: SMASH_BURGER_OPTIONS_2
+      },
+      {
+        id: "bebida_combo",
+        title: "Escolha a Bebida do Combo",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: COMBO_BEVERAGE_OPTIONS
+      }
+    ]
   },
   {
     id: "combo-smash-economico",
     category: "promocoes",
     name: "Combo Smash Econômico (O Queridinho do Bolso!)",
     subtitle: "1x Burger Smash + 1x Batata Pequena + 1x Refrigerante 200ml",
-    composition: "1x Burger Smash (escolha a opção: Clássico, Bacon Melt ou Crispy) + 1x Batata Frita Pequena + 1x Refrigerante 200ml.",
-    description: "COMPOSIÇÃO: 1x Burger Smash (escolha a opção: Clássico, Bacon Melt ou Crispy) + 1x Batata Frita Pequena + 1x Refrigerante 200ml.\n\nBateu aquela vontade de Cailu Burger mas a grana tá curta? Criamos o combo perfeito para salvar a sua noite sem pesar no bolso. O sabor incomparável do nosso Smash de 80g com um preço imbatível!",
+    composition: "1x Burger Smash à escolha + 1x Batata Frita Pequena + 1x Refrigerante 200ml à escolha.",
+    description: "COMPOSIÇÃO: 1x Burger Smash à escolha + 1x Batata Frita Pequena + 1x Refrigerante 200ml à escolha.\n\nBateu aquela vontade de Cailu Burger mas a grana tá curta? Criamos o combo perfeito para salvar a sua noite sem pesar no bolso. O sabor incomparável do nosso Smash de 80g com um preço imbatível!",
     price: 27.90,
     originalPrice: 32.90,
     image: "img/combo-smash-economico.jpeg",
     badge: "Queridinho do Bolso",
-    serves: "Individual"
+    serves: "Individual",
+    hasOptions: true,
+    optionGroups: [
+      {
+        id: "smash_economico",
+        title: "Escolha seu Burger Smash",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: SMASH_BURGER_OPTIONS_1
+      },
+      {
+        id: "bebida_economica",
+        title: "Escolha seu Refrigerante 200ml",
+        subtitle: "Escolha 1 opção inclusa",
+        required: true,
+        options: SMASH_ECONOMICO_DRINK_OPTIONS
+      }
+    ]
   },
 
   // --- BURGERS ARTESANAIS (BLENDS EXCLUSIVOS NA BRASA) ---
@@ -310,14 +531,20 @@ const PRODUCTS = [
     ]
   },
   {
-    id: "molho-grill-extra",
+    id: "frango-frito",
     category: "acompanhamentos",
-    name: "Pote Extra de Molho Grill da Casa (50ml)",
-    subtitle: "O molho assinatura da Cailu Burger",
-    description: "Nosso autêntico molho grill cremoso e aromático, feito artesanalmente para mergulhar seus burgers e batatas.",
-    price: 4.00,
-    image: "",
-    badge: "Molho da Casa",
-    serves: "Pote 50ml"
+    name: "Frango Frito",
+    subtitle: "Pedaços crocantes e suculentos com tempero especial",
+    description: "Porção de frango frito crocante e suculento, preparado com tempero artesanal exclusivo da casa. Escolha o tamanho ideal.",
+    price: 28.90,
+    image: "img/frango-frito.jpeg",
+    badge: "Super Crocante",
+    serves: "Pequena ou Grande",
+    hasOptions: true,
+    optionTypeLabel: "Tamanho da Porção",
+    sizes: [
+      { id: "Pequena", name: "Pequena", price: 28.90, default: true },
+      { id: "Grande", name: "Grande", price: 49.90 }
+    ]
   }
 ];

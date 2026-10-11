@@ -1793,7 +1793,8 @@ img {
   border-radius: var(--radius-lg);
   max-width: 480px;
   width: 90%;
-  overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-lg);
   position: relative;
   transform: scale(0.95);
@@ -1987,6 +1988,192 @@ img {
 
 .option-chip-btn.selected .chip-price-tag {
   color: #fef08a;
+}
+
+/* ==============================================================================
+   SELETORES ESTILO IFOOD (COM MINIATURAS E RÁDIO CUSTOMIZADO)
+============================================================================== */
+.ifood-option-group {
+  margin-top: 14px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.ifood-group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.ifood-group-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.ifood-group-subtitle {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+.ifood-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ifood-option-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.ifood-option-card:hover {
+  border-color: rgba(234, 88, 12, 0.45);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.ifood-option-card.selected {
+  border-color: var(--color-primary);
+  background-color: rgba(234, 88, 12, 0.08);
+}
+
+.ifood-option-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ifood-option-thumb-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  padding: 3px;
+}
+
+.ifood-option-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ifood-option-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ifood-option-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.ifood-option-card.selected .ifood-option-name {
+  color: #ffffff;
+}
+
+.ifood-option-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.25;
+  margin-top: 2px;
+}
+
+.ifood-option-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ifood-option-price-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.ifood-option-price-tag.free {
+  color: var(--color-success);
+  font-size: 0.74rem;
+}
+
+/* Radio Button customizado iFood */
+.ifood-radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.ifood-option-card.selected .ifood-radio-circle {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+}
+
+.ifood-radio-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: none;
+}
+
+.ifood-option-card.selected .ifood-radio-dot {
+  display: block;
+}
+
+/* Badges de opções customizadas no carrinho */
+.cart-item-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 3px;
+  margin-bottom: 3px;
+}
+
+.cart-item-option-badge {
+  font-size: 0.72rem;
+  color: var(--color-accent);
+  background-color: rgba(245, 158, 11, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  line-height: 1.25;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .product-notes-notice {
