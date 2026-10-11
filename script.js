@@ -81,7 +81,7 @@ function showToast(message, type = "success") {
 /**
  * Rola a esteira de carrossel para esquerda ou direita com animação suave
  */
-window.scrollCarousel = function(carouselId, direction) {
+window.scrollCarousel = function (carouselId, direction) {
   const container = document.getElementById(carouselId);
   if (!container) return;
 
@@ -154,7 +154,7 @@ function initRestaurantInfo() {
   document.getElementById("statCoverage").textContent = RESTAURANT_CONFIG.coverage;
   document.getElementById("statMinOrder").textContent = formatMoney(RESTAURANT_CONFIG.minOrder);
   document.getElementById("pixKeyValue").textContent = RESTAURANT_CONFIG.pixKey;
-  
+
   // Imagem da Logo Oficial
   const logoImg = document.getElementById("restaurantLogoImg");
   if (logoImg && RESTAURANT_CONFIG.logo) {
@@ -177,10 +177,10 @@ function initRestaurantInfo() {
       ${RESTAURANT_CONFIG.neighborhood} - BH
     `;
   }
-  
+
   const hoursText = `${String(RESTAURANT_CONFIG.openingHours.open).padStart(2, '0')}:${String(RESTAURANT_CONFIG.openingHours.openMinutes).padStart(2, '0')} às ${String(RESTAURANT_CONFIG.openingHours.close).padStart(2, '0')}:${String(RESTAURANT_CONFIG.openingHours.closeMinutes).padStart(2, '0')}`;
   document.getElementById("statHours").textContent = hoursText;
-  
+
   const deliveryFeeLabel = document.getElementById("deliveryFeeLabel");
   if (deliveryFeeLabel) {
     deliveryFeeLabel.textContent = `Taxa: ${formatMoney(RESTAURANT_CONFIG.deliveryFee)}`;
@@ -214,7 +214,7 @@ function renderCategories() {
 
     btn.addEventListener("click", () => {
       AppState.activeCategory = category.id;
-      
+
       document.querySelectorAll(".category-pill-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
@@ -261,7 +261,7 @@ function renderProducts() {
   // Filtragem
   let filtered = PRODUCTS.filter(prod => {
     const matchCategory = AppState.activeCategory === "all" || prod.category === AppState.activeCategory;
-    const matchSearch = !isSearchActive || 
+    const matchSearch = !isSearchActive ||
       prod.name.toLowerCase().includes(AppState.searchQuery.toLowerCase()) ||
       prod.description.toLowerCase().includes(AppState.searchQuery.toLowerCase());
     return matchCategory && matchSearch;
@@ -302,8 +302,8 @@ function renderProducts() {
   }
 
   // MODO CARROSSEL: Agrupa por categorias e cria esteiras horizontais deslizantes
-  const categoriesToDisplay = AppState.activeCategory === "all" 
-    ? CATEGORIES.filter(c => c.id !== "all") 
+  const categoriesToDisplay = AppState.activeCategory === "all"
+    ? CATEGORIES.filter(c => c.id !== "all")
     : CATEGORIES.filter(c => c.id === AppState.activeCategory);
 
   categoriesToDisplay.forEach(cat => {
@@ -369,7 +369,7 @@ function createProductCard(prod, isCarousel = false) {
 
   card.innerHTML = `
     <div class="product-image-container" onclick="openProductModal('${prod.id}')" title="Clique para detalhes e opções">
-      <img src="${prod.image}" alt="${prod.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=80'">
+      <img src="${prod.image || 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=700&q=80'}" alt="${prod.name}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=80'">
       ${badgeHtml}
       ${servesHtml}
     </div>
@@ -380,7 +380,7 @@ function createProductCard(prod, isCarousel = false) {
       
       <div class="product-footer-row">
         <div class="product-price-wrapper">
-          <span class="product-price-currency">${pricePrefix}</span>
+          ${prod.originalPrice ? `<span class="product-price-old">De ${formatMoney(prod.originalPrice)}</span>` : `<span class="product-price-currency">${pricePrefix}</span>`}
           <span class="product-price-value">${formatMoney(prod.price)}</span>
         </div>
 
@@ -430,7 +430,7 @@ function renderCardAction(prod, quantity) {
 // ==============================================================================
 // MODAL DE DETALHES & OPÇÕES DO PRODUTO (BEBIDAS: NORMAL/ZERO & TAMANHO)
 // ==============================================================================
-window.openProductModal = function(productId) {
+window.openProductModal = function (productId) {
   const prod = PRODUCTS.find(p => p.id === productId);
   if (!prod) return;
 
@@ -439,10 +439,60 @@ window.openProductModal = function(productId) {
 
   document.getElementById("modalProductTitle").textContent = prod.name;
   document.getElementById("modalProductDesc").textContent = prod.description;
-  document.getElementById("modalProductImage").src = prod.image;
+  document.getElementById("modalProductImage").src = prod.image || 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=700&q=80';
   document.getElementById("modalProductServes").textContent = prod.serves || "";
-  document.getElementById("modalProductNotes").value = "";
-  
+
+  // Preço De / Por no Modal
+  const oldPriceEl = document.getElementById("modalProductOldPrice");
+  const currentPriceEl = document.getElementById("modalProductCurrentPrice");
+  if (oldPriceEl && currentPriceEl) {
+    if (prod.originalPrice) {
+      oldPriceEl.textContent = `De ${formatMoney(prod.originalPrice)}`;
+      oldPriceEl.style.display = "inline-block";
+      currentPriceEl.textContent = `Por ${formatMoney(prod.price)}`;
+    } else {
+      oldPriceEl.style.display = "none";
+      currentPriceEl.textContent = `${formatMoney(prod.price)}`;
+    }
+  }
+
+  // Placeholder inteligente e aviso de observações
+  const notesInput = document.getElementById("modalProductNotes");
+  const notesNotice = document.getElementById("modalProductNotesNotice");
+  const notesLabel = document.getElementById("modalProductNotesLabel");
+
+  if (notesInput) {
+    notesInput.value = "";
+    if (prod.category === "bebidas") {
+      if (notesLabel) {
+        notesLabel.textContent = "Observação sobre a bebida:";
+      }
+      if (notesNotice) {
+        notesNotice.textContent = "Mediante disponibilidade do estoque, em caso de opção indisponível nossa equipe entrará em contato para troca do item.";
+        notesNotice.style.display = "block";
+      }
+      notesInput.style.display = "none";
+    } else {
+      if (notesLabel) {
+        notesLabel.textContent = "Observações para este item (opcional):";
+      }
+      if (notesNotice) {
+        notesNotice.textContent = "";
+        notesNotice.style.display = "none";
+      }
+      notesInput.style.display = "block";
+      if (prod.id === "combo-smash-prime-80g") {
+        notesInput.placeholder = "Ex: 1 Clássico + 1 Bacon Melt, 2 Cocas lata bem geladas...";
+      } else if (prod.id === "combo-smash-economico") {
+        notesInput.placeholder = "Ex: Smash Bacon Melt, Coca 200ml bem geladinha...";
+      } else if (prod.category === "promocoes") {
+        notesInput.placeholder = "Ex: Sabores dos refrigerantes lata, ponto dos burgers...";
+      } else {
+        notesInput.placeholder = "Ex: Carne ao ponto, sem picles, molho grill à parte...";
+      }
+    }
+  }
+
   const badgeEl = document.getElementById("modalProductBadge");
   if (prod.badge) {
     badgeEl.textContent = prod.badge;
@@ -490,16 +540,21 @@ window.openProductModal = function(productId) {
       AppState.selectedOptionType = null;
     }
 
-    // 2. Grupo de Tamanho / Volume
-    if (prod.sizes && prod.sizes.length > 0) {
+    // 2. Grupo de Tamanho / Opções (Bebidas, Porções de Batata, etc.)
+    const availableSizes = prod.sizes || prod.options;
+    if (availableSizes && availableSizes.length > 0) {
       sizeGroup.style.display = "flex";
+      const sizeTitleEl = document.getElementById("modalSizeGroupTitle");
+      if (sizeTitleEl) {
+        sizeTitleEl.textContent = prod.optionSizeLabel || (!prod.types ? prod.optionTypeLabel : "Escolha o Tamanho") || "Escolha o Tamanho";
+      }
       sizeChips.innerHTML = "";
 
       // Padrão selecionado
-      const defaultSize = prod.sizes.find(s => s.default) || prod.sizes[0];
+      const defaultSize = availableSizes.find(s => s.default) || availableSizes[0];
       AppState.selectedOptionSize = defaultSize;
 
-      prod.sizes.forEach(sizeObj => {
+      availableSizes.forEach(sizeObj => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = `option-chip-btn ${sizeObj.id === defaultSize.id ? "selected" : ""}`;
@@ -551,6 +606,11 @@ function updateModalPrice() {
 
   document.getElementById("modalQtyDisplay").textContent = AppState.modalQuantity;
   document.getElementById("modalAddBtnPrice").textContent = formatMoney(total);
+
+  const currentPriceEl = document.getElementById("modalProductCurrentPrice");
+  if (currentPriceEl && !prod.originalPrice) {
+    currentPriceEl.textContent = formatMoney(unitPrice);
+  }
 }
 
 // ==============================================================================
@@ -560,7 +620,7 @@ function updateModalPrice() {
 /**
  * Adiciona rapidamente 1 unidade a partir do botão do card
  */
-window.quickAddToCart = function(productId) {
+window.quickAddToCart = function (productId) {
   const prod = PRODUCTS.find(p => p.id === productId);
   if (!prod) return;
 
@@ -577,7 +637,7 @@ window.quickAddToCart = function(productId) {
 /**
  * Atualiza quantidade diretamente a partir dos botões do card
  */
-window.updateItemQuantityById = function(productId, delta) {
+window.updateItemQuantityById = function (productId, delta) {
   const itemIndex = AppState.cart.findIndex(i => i.id === productId);
   if (itemIndex > -1) {
     const newQty = AppState.cart[itemIndex].quantity + delta;
@@ -647,7 +707,7 @@ function addCustomItemToCart(itemObj) {
 /**
  * Atualiza quantidade de um item na lista do Drawer
  */
-window.updateDrawerItemQuantity = function(index, delta) {
+window.updateDrawerItemQuantity = function (index, delta) {
   if (!AppState.cart[index]) return;
 
   const newQty = AppState.cart[index].quantity + delta;
@@ -667,7 +727,7 @@ window.updateDrawerItemQuantity = function(index, delta) {
 /**
  * Remove item específico do carrinho
  */
-window.removeCartItem = function(index) {
+window.removeCartItem = function (index) {
   if (!AppState.cart[index]) return;
   const originalId = AppState.cart[index].originalId || AppState.cart[index].id;
   AppState.cart.splice(index, 1);
@@ -963,7 +1023,7 @@ function finishOrderWhatsApp() {
   });
   message += `\n`;
 
-  message += `*RESUMO FINANCEIRO:*\n`;
+  message += `*TOTAL DO PEDIDO:*\n`;
   message += `- Subtotal dos itens: ${formatMoney(subtotal)}\n`;
   if (AppState.appliedCoupon) {
     message += `- Desconto Cupom (${AppState.appliedCoupon.code}): - ${formatMoney(discountAmount)}\n`;

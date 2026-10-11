@@ -26,11 +26,12 @@ Aplicação web moderna, rápida e responsiva (Single Page Application - SPA) de
 - O item é adicionado à sacola e à mensagem do WhatsApp com a especificação exata (ex: *Coca-Cola (Zero Açúcar - Lata 350ml)*).
 
 ### 3. 🍔 Cardápio Completo com Fotos Reais e Logo Oficial
-- **Promoções & Combos:**
-  - *Promoção De Inauguração - Cailu Dose Dupla* (2 smashs pelo preço de 1) — R$ 26,90
-  - *Combo Cailu Love + Crispy* (2 burgers artesanais + 2 refris 200ml) — R$ 59,90
-  - *Combo Cailu Love Duplo + Tradicional* (2 burgers especiais + 2 refris 200ml) — R$ 56,90
-  - *Trio Combo Smash Cailu* (3 smash burgers artesanais) — R$ 49,90
+- **Combos Artesanais Oficiais (Seu Artesanal de Verdade!):**
+  - *Combo Duplo* (2x Cailu Love Duplo + 1x Batata Grande 300g + 2x Refris Lata 350ml) — De R$ 107,70 por **R$ 87,90**
+  - *Combo Misto* (1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Grande 300g + 2x Refris Lata 350ml) — De R$ 94,70 por **R$ 74,90**
+  - *Combo Mix Premium* (1x Bacon Love + 1x Cailu Crispy + 1x Batata Grande + 2x Refris Lata 350ml) — De R$ 95,70 por **R$ 74,90**
+  - *Combo Smash Prime - 80g* (2x Burgers Smash à escolha + 1x Batata Grande + 2x Refris Lata 350ml) — De R$ 71,90 por **R$ 57,90**
+  - *Combo Smash Econômico (O Queridinho do Bolso!)* (1x Burger Smash + 1x Batata Pequena + 1x Refri 200ml) — De R$ 32,90 por **R$ 27,90**
 - **Burgers Artesanais (Blend na Brasa):**
   - *Cailu Tradicional* (Blend 120g, queijo prato, bacon crocante, molho grill, brioche) — R$ 22,90
   - *Cailu Bacon Love* (Blend 120g, mix de queijos, bacon caramelizado exclusivo) — R$ 27,90
