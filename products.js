@@ -16,11 +16,15 @@ const RESTAURANT_CONFIG = {
   cnpj: "64.875.012/0001-42",
   whatsapp: "5531982853457", // Telefone sem caracteres especiais
   phoneDisplay: "(31) 98285-3457",
-  address: "Rua Domingos Rocha - Salgado Filho, BH - MG",
+  address: "Rua Domingos Rocha, 765 - Salgado Filho, Belo Horizonte - MG",
   neighborhood: "Salgado Filho",
   coverage: "Salgado Filho e Região (BH)",
-  averageTime: "35 - 50 min",
-  deliveryFee: 6.00, // Taxa de entrega padrão em R$
+  coordinates: {
+    lat: -19.9402136,
+    lng: -43.9809866
+  },
+  averageTime: "40 - 50 min",
+  deliveryFee: 5.00, // Taxa de entrega base inicial em R$
   minOrder: 20.00,   // Pedido mínimo em R$
   openingHours: {
     days: "Terça a Domingo",
@@ -33,6 +37,64 @@ const RESTAURANT_CONFIG = {
   instagramUrl: "https://www.instagram.com/cailuburger/",
   pixKey: "64875012000142 (CNPJ / Luana Fátima)"
 };
+
+// Tabela Oficial de Taxas e Tempos por Raio de Distância (km)
+const DELIVERY_TIERS = [
+  { maxKm: 0.5, fee: 5.00, time: "40 min" },
+  { maxKm: 1.0, fee: 5.00, time: "40 min" },
+  { maxKm: 1.5, fee: 5.00, time: "40 min" },
+  { maxKm: 2.0, fee: 6.00, time: "40 min" },
+  { maxKm: 2.5, fee: 7.00, time: "42 min" },
+  { maxKm: 3.0, fee: 7.00, time: "42 min" },
+  { maxKm: 3.5, fee: 8.00, time: "42 min" },
+  { maxKm: 4.0, fee: 10.00, time: "45 min" },
+  { maxKm: 5.0, fee: 11.00, time: "45 min" },
+  { maxKm: 6.0, fee: 12.00, time: "50 min" },
+  { maxKm: 7.0, fee: 14.00, time: "50 min" },
+  { maxKm: 10.0, fee: 20.00, time: "60 min" }
+];
+
+const MAX_DELIVERY_RADIUS_KM = 10.0;
+
+function calculateDeliveryTier(distanceKm) {
+  if (distanceKm == null || isNaN(distanceKm)) {
+    return {
+      distanceKm: null,
+      fee: RESTAURANT_CONFIG.deliveryFee,
+      time: RESTAURANT_CONFIG.averageTime,
+      exceedsMaxRadius: false
+    };
+  }
+
+  const roundedDistance = Math.round(distanceKm * 10) / 10;
+
+  if (roundedDistance > MAX_DELIVERY_RADIUS_KM) {
+    return {
+      distanceKm: roundedDistance,
+      fee: 20.00, // Base para > 10 km
+      time: "60+ min",
+      exceedsMaxRadius: true
+    };
+  }
+
+  for (const tier of DELIVERY_TIERS) {
+    if (roundedDistance <= tier.maxKm) {
+      return {
+        distanceKm: roundedDistance,
+        fee: tier.fee,
+        time: tier.time,
+        exceedsMaxRadius: false
+      };
+    }
+  }
+
+  return {
+    distanceKm: roundedDistance,
+    fee: 20.00,
+    time: "60 min",
+    exceedsMaxRadius: false
+  };
+}
 
 // Categorias do cardápio Cailu Burger
 const CATEGORIES = [
@@ -543,8 +605,8 @@ const PRODUCTS = [
     hasOptions: true,
     optionTypeLabel: "Tamanho da Porção",
     sizes: [
-      { id: "Pequena", name: "Pequena", price: 28.90, default: true },
-      { id: "Grande", name: "Grande", price: 49.90 }
+      { id: "Pequena", name: "Pequena (5 uni)", price: 28.90, default: true },
+      { id: "Grande", name: "Grande (10 uni)", price: 49.90 }
     ]
   }
 ];

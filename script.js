@@ -17,7 +17,13 @@ const AppState = {
   modalQuantity: 1,
   selectedOptionType: null, // Ex: "Zero Açúcar" ou "Normal (Original)"
   selectedOptionSize: null,  // Ex: { id: "Lata 350ml", name: "Lata 350ml", price: 6.50 }
-  selectedCustomGroupOptions: {} // Ex: { "bebida_combo": optionObj }
+  selectedCustomGroupOptions: {}, // Ex: { "bebida_combo": optionObj }
+  deliveryDistanceKm: null,
+  deliveryFee: RESTAURANT_CONFIG.deliveryFee,
+  deliveryTime: RESTAURANT_CONFIG.averageTime,
+  deliveryExceedsMax: false,
+  deliveryCoords: null,
+  isCalculatingDelivery: false
 };
 
 // Chaves do LocalStorage
@@ -863,7 +869,8 @@ function updateCartUI() {
 
   // Tipo de entrega
   const isDelivery = document.getElementById("orderTypeDelivery").checked;
-  const deliveryFee = isDelivery && totalItems > 0 ? RESTAURANT_CONFIG.deliveryFee : 0;
+  const currentFee = (AppState.deliveryFee != null) ? AppState.deliveryFee : RESTAURANT_CONFIG.deliveryFee;
+  const deliveryFee = isDelivery && totalItems > 0 ? currentFee : 0;
 
   // Desconto por cupom
   let discountAmount = 0;
@@ -890,7 +897,27 @@ function updateCartUI() {
   // Drawer
   drawerCount.textContent = `${totalItems} ${totalItems === 1 ? 'item' : 'itens'}`;
   subtotalEl.textContent = formatMoney(subtotal);
-  deliveryFeeEl.textContent = isDelivery ? formatMoney(deliveryFee) : "Grátis (Retirada)";
+
+  if (isDelivery) {
+    if (AppState.deliveryDistanceKm != null) {
+      deliveryFeeEl.innerHTML = `${formatMoney(deliveryFee)} <small style="font-size: 0.74rem; color: var(--color-accent); font-weight: 700;">(${AppState.deliveryDistanceKm} km)</small>`;
+    } else {
+      deliveryFeeEl.innerHTML = `${formatMoney(deliveryFee)} <small style="font-size: 0.7rem; color: var(--text-dim); font-weight: normal;">(A calcular)</small>`;
+    }
+  } else {
+    deliveryFeeEl.textContent = "Grátis (Retirada)";
+  }
+
+  // Atualiza etiqueta no seletor de rádio
+  const deliveryFeeLabel = document.getElementById("deliveryFeeLabel");
+  if (deliveryFeeLabel) {
+    if (AppState.deliveryDistanceKm != null) {
+      deliveryFeeLabel.textContent = `Taxa: ${formatMoney(currentFee)} (${AppState.deliveryDistanceKm} km)`;
+    } else {
+      deliveryFeeLabel.textContent = `A partir de ${formatMoney(RESTAURANT_CONFIG.deliveryFee)}`;
+    }
+  }
+
   grandTotalEl.textContent = formatMoney(grandTotal);
 
   // Alerta de Pedido Mínimo
@@ -965,9 +992,11 @@ function loadSavedCart() {
 }
 
 function saveCustomerData() {
+  const cepInput = document.getElementById("customerCep");
   const data = {
     name: document.getElementById("customerName").value.trim(),
     phone: document.getElementById("customerPhone").value.trim(),
+    cep: cepInput ? cepInput.value.trim() : "",
     street: document.getElementById("customerStreet").value.trim(),
     number: document.getElementById("customerNumber").value.trim(),
     neighborhood: document.getElementById("customerNeighborhood").value.trim(),
@@ -989,15 +1018,392 @@ function loadSavedCustomerData() {
       const data = JSON.parse(raw);
       if (data.name) document.getElementById("customerName").value = data.name;
       if (data.phone) document.getElementById("customerPhone").value = data.phone;
+      const cepInput = document.getElementById("customerCep");
+      if (cepInput && data.cep) cepInput.value = data.cep;
       if (data.street) document.getElementById("customerStreet").value = data.street;
       if (data.number) document.getElementById("customerNumber").value = data.number;
       if (data.neighborhood) document.getElementById("customerNeighborhood").value = data.neighborhood;
       if (data.complement) document.getElementById("customerComplement").value = data.complement;
       if (data.reference) document.getElementById("customerReference").value = data.reference;
+
+      // Se já temos endereço completo gravado, calcula a distância em background
+      if (data.street && data.neighborhood) {
+        setTimeout(() => {
+          calculateDeliveryFeeFromForm(false);
+        }, 600);
+      }
     }
   } catch (e) {
     console.error("Erro ao carregar dados salvos do cliente", e);
   }
+}
+
+// ==============================================================================
+// MOTOR DE GEOLOCALIZAÇÃO E CÁLCULO DE TAXA POR DISTÂNCIA (100% NO GITHUB PAGES)
+// ==============================================================================
+
+/**
+ * Fórmula de Haversine: calcula a distância em linha reta entre duas coordenadas (em km)
+ */
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Raio da Terra em km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Geocodifica um endereço usando OpenStreetMap / Nominatim (100% gratuito)
+ */
+async function geocodeAddress(street, number, neighborhood, city = "Belo Horizonte", state = "MG") {
+  const cleanStreet = street.replace(/^(rua|avenida|av\.|alameda|r\.)\s+/i, "").trim();
+  const queries = [];
+
+  if (number) {
+    queries.push(`${cleanStreet}, ${number}, ${neighborhood}, ${city}, ${state}, Brasil`);
+    queries.push(`${street}, ${number}, ${neighborhood}, ${city}, Brasil`);
+  }
+  queries.push(`${cleanStreet}, ${neighborhood}, ${city}, ${state}, Brasil`);
+  queries.push(`${street}, ${neighborhood}, ${city}, Brasil`);
+  queries.push(`${neighborhood}, ${city}, ${state}, Brasil`);
+
+  for (const q of queries) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { "Accept-Language": "pt-BR" }
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+          displayName: data[0].display_name
+        };
+      }
+    } catch (e) {
+      // Tenta a próxima consulta
+    }
+  }
+  return null;
+}
+
+/**
+ * Calcula a distância de condução pelas vias de BH usando OSRM com fallback seguro
+ */
+async function getDrivingDistanceKm(originCoords, destCoords) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${originCoords.lng},${originCoords.lat};${destCoords.lng},${destCoords.lat}?overview=false`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.routes && data.routes.length > 0) {
+        const distanceKm = data.routes[0].distance / 1000;
+        return distanceKm;
+      }
+    }
+  } catch (e) {
+    console.warn("OSRM em fallback local de trânsito urbano:", e);
+  }
+
+  // Fallback: Haversine com fator de 1.30 para curvas das vias urbanas em BH
+  const directKm = haversineDistance(originCoords.lat, originCoords.lng, destCoords.lat, destCoords.lng);
+  return directKm * 1.30;
+}
+
+/**
+ * Renderiza o card visual com o resultado da distância e taxa
+ */
+function renderDeliveryCalcCard(state, data = {}) {
+  const card = document.getElementById("deliveryCalcCard");
+  if (!card) return;
+
+  if (state === "idle") {
+    card.innerHTML = `
+      <div class="calc-card-idle">
+        <span class="calc-icon">📍</span>
+        <div class="calc-text">
+          <strong>Taxa calculada por distância real</strong>
+          <small>Informe sua rua, número e bairro para consultar o valor exato até a Cailu Burger (Salgado Filho).</small>
+        </div>
+      </div>
+    `;
+  } else if (state === "loading") {
+    card.innerHTML = `
+      <div class="calc-card-loading">
+        <div class="calc-spinner"></div>
+        <div class="calc-card-loading-text">
+          <strong>Calculando trajeto até sua residência...</strong>
+          <small>Consultando rotas e distância da Cailu Burger (Rua Domingos Rocha, 765)</small>
+        </div>
+      </div>
+    `;
+  } else if (state === "success") {
+    card.innerHTML = `
+      <div class="calc-card-success">
+        <div class="calc-success-header">
+          <span class="calc-success-title">✓ Trajeto verificado com sucesso</span>
+          <span class="calc-origin-tag">Salgado Filho → ${data.neighborhood || 'Seu Bairro'}</span>
+        </div>
+        <div class="calc-grid-stats">
+          <div class="calc-stat-pill">
+            <span class="calc-stat-label">Distância</span>
+            <strong class="calc-stat-value">${data.distanceKm} km</strong>
+          </div>
+          <div class="calc-stat-pill">
+            <span class="calc-stat-label">Previsão</span>
+            <strong class="calc-stat-value">${data.time}</strong>
+          </div>
+          <div class="calc-stat-pill highlight">
+            <span class="calc-stat-label">Taxa</span>
+            <strong class="calc-stat-value">${formatMoney(data.fee)}</strong>
+          </div>
+        </div>
+        <div class="calc-route-note">
+          Rota calculada pelas vias de BH. Taxa e tempo atualizados no seu pedido.
+        </div>
+      </div>
+    `;
+  } else if (state === "warning") {
+    card.innerHTML = `
+      <div class="calc-card-warning">
+        <div class="calc-warning-text">
+          <strong>⚠️ Distância de ${data.distanceKm} km (Acima do raio de 10 km)</strong>
+          <p>Seu endereço fica a mais de 10 km da loja. A taxa base é de ${formatMoney(data.fee)} e a entrega poderá ser combinada e confirmada diretamente com nossa equipe no WhatsApp.</p>
+        </div>
+      </div>
+    `;
+  } else if (state === "error") {
+    card.innerHTML = `
+      <div class="calc-card-error">
+        <div class="calc-error-text">
+          <strong>⚠️ Não localizamos o endereço exato</strong>
+          <small>${data.message || 'Confira o nome da rua, número e bairro ou utilize o botão "Usar meu GPS".'}</small>
+        </div>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Executa a verificação e cálculo de taxa pelo formulário
+ */
+async function calculateDeliveryFeeFromForm(notifyOnSuccess = false) {
+  const streetInput = document.getElementById("customerStreet");
+  const numberInput = document.getElementById("customerNumber");
+  const neighborhoodInput = document.getElementById("customerNeighborhood");
+  const btnCalc = document.getElementById("btnCalculateDistance");
+
+  const street = streetInput ? streetInput.value.trim() : "";
+  const number = numberInput ? numberInput.value.trim() : "";
+  const neighborhood = neighborhoodInput ? neighborhoodInput.value.trim() : "";
+
+  if (!street || !neighborhood) {
+    if (notifyOnSuccess) {
+      showToast("Informe pelo menos a Rua e o Bairro para calcular o frete.", "error");
+      if (!street && streetInput) streetInput.focus();
+      else if (!neighborhood && neighborhoodInput) neighborhoodInput.focus();
+    }
+    return;
+  }
+
+  AppState.isCalculatingDelivery = true;
+  if (btnCalc) btnCalc.disabled = true;
+  renderDeliveryCalcCard("loading");
+
+  try {
+    const coords = await geocodeAddress(street, number, neighborhood);
+
+    if (!coords) {
+      renderDeliveryCalcCard("error", {
+        message: "Não encontramos as vias deste endereço em BH. Verifique se o nome da rua ou bairro possuem erros de digitação."
+      });
+      if (notifyOnSuccess) {
+        showToast("Endereço não localizado no mapa. Confira a digitação.", "error");
+      }
+      return;
+    }
+
+    AppState.deliveryCoords = coords;
+    const distanceKm = await getDrivingDistanceKm(RESTAURANT_CONFIG.coordinates, coords);
+    const tier = calculateDeliveryTier(distanceKm);
+
+    AppState.deliveryDistanceKm = tier.distanceKm;
+    AppState.deliveryFee = tier.fee;
+    AppState.deliveryTime = tier.time;
+    AppState.deliveryExceedsMax = tier.exceedsMaxRadius;
+
+    if (tier.exceedsMaxRadius) {
+      renderDeliveryCalcCard("warning", {
+        distanceKm: tier.distanceKm,
+        fee: tier.fee,
+        time: tier.time
+      });
+      if (notifyOnSuccess) {
+        showToast(`Distância de ${tier.distanceKm} km excede 10 km. Taxa base: ${formatMoney(tier.fee)}.`, "info");
+      }
+    } else {
+      renderDeliveryCalcCard("success", {
+        distanceKm: tier.distanceKm,
+        fee: tier.fee,
+        time: tier.time,
+        neighborhood: neighborhood
+      });
+      if (notifyOnSuccess) {
+        showToast(`Distância: ${tier.distanceKm} km | Taxa: ${formatMoney(tier.fee)} (${tier.time})`);
+      }
+    }
+
+    updateCartUI();
+  } catch (err) {
+    console.error("Erro no cálculo de entrega:", err);
+    renderDeliveryCalcCard("error", {
+      message: "Falha na conexão ao consultar o mapa. Tente novamente em instantes."
+    });
+  } finally {
+    AppState.isCalculatingDelivery = false;
+    if (btnCalc) btnCalc.disabled = false;
+  }
+}
+
+/**
+ * Busca de endereço por CEP através da API pública do ViaCEP
+ */
+async function searchCep() {
+  const cepInput = document.getElementById("customerCep");
+  if (!cepInput) return;
+
+  const rawCep = cepInput.value.replace(/\D/g, "");
+  if (rawCep.length !== 8) {
+    showToast("Digite um CEP válido com 8 dígitos.", "error");
+    cepInput.focus();
+    return;
+  }
+
+  showToast("Buscando endereço pelo CEP...", "info");
+
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${rawCep}/json/`);
+    if (!res.ok) throw new Error("Erro na requisição do CEP");
+    const data = await res.json();
+
+    if (data.erro) {
+      showToast("CEP não encontrado.", "error");
+      return;
+    }
+
+    const streetInput = document.getElementById("customerStreet");
+    const neighborhoodInput = document.getElementById("customerNeighborhood");
+    const numberInput = document.getElementById("customerNumber");
+
+    if (streetInput && data.logradouro) streetInput.value = data.logradouro;
+    if (neighborhoodInput && data.bairro) neighborhoodInput.value = data.bairro;
+
+    showToast("Endereço preenchido com sucesso!");
+
+    if (numberInput && !numberInput.value.trim()) {
+      numberInput.focus();
+    } else {
+      calculateDeliveryFeeFromForm(false);
+    }
+  } catch (e) {
+    console.error("Erro ao buscar CEP:", e);
+    showToast("Não foi possível buscar o CEP automaticamente.", "error");
+  }
+}
+
+/**
+ * Obtém a localização atual pelo GPS do celular do cliente
+ */
+function handleGpsLocation() {
+  if (!navigator.geolocation) {
+    showToast("Geolocalização não suportada pelo seu navegador.", "error");
+    return;
+  }
+
+  showToast("Obtendo sua localização via GPS...", "info");
+  renderDeliveryCalcCard("loading");
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const userCoords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+
+      AppState.deliveryCoords = userCoords;
+
+      try {
+        const distanceKm = await getDrivingDistanceKm(RESTAURANT_CONFIG.coordinates, userCoords);
+        const tier = calculateDeliveryTier(distanceKm);
+
+        AppState.deliveryDistanceKm = tier.distanceKm;
+        AppState.deliveryFee = tier.fee;
+        AppState.deliveryTime = tier.time;
+        AppState.deliveryExceedsMax = tier.exceedsMaxRadius;
+
+        // Tentar obter nome da rua/bairro via Reverse Geocoding
+        try {
+          const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userCoords.lat}&lon=${userCoords.lng}`;
+          const revRes = await fetch(revUrl, { headers: { "Accept-Language": "pt-BR" } });
+          if (revRes.ok) {
+            const revData = await revRes.json();
+            const addr = revData.address || {};
+            const streetInput = document.getElementById("customerStreet");
+            const neighborhoodInput = document.getElementById("customerNeighborhood");
+            if (streetInput && !streetInput.value.trim() && addr.road) streetInput.value = addr.road;
+            if (neighborhoodInput && !neighborhoodInput.value.trim() && (addr.suburb || addr.neighbourhood)) {
+              neighborhoodInput.value = addr.suburb || addr.neighbourhood;
+            }
+          }
+        } catch (e) {
+          // Ignora falha de reverse geocoding
+        }
+
+        if (tier.exceedsMaxRadius) {
+          renderDeliveryCalcCard("warning", {
+            distanceKm: tier.distanceKm,
+            fee: tier.fee,
+            time: tier.time
+          });
+        } else {
+          renderDeliveryCalcCard("success", {
+            distanceKm: tier.distanceKm,
+            fee: tier.fee,
+            time: tier.time,
+            neighborhood: document.getElementById("customerNeighborhood").value || "Sua Localização"
+          });
+        }
+
+        updateCartUI();
+        showToast(`GPS detectado! Distância: ${tier.distanceKm} km | Taxa: ${formatMoney(tier.fee)}`);
+      } catch (e) {
+        console.error("Erro ao calcular rota do GPS:", e);
+        renderDeliveryCalcCard("error", { message: "Erro ao calcular trajeto a partir do GPS." });
+      }
+    },
+    (err) => {
+      console.warn("Permissão de GPS negada ou indisponível:", err);
+      showToast("Permissão de GPS não concedida. Preencha rua e bairro.", "info");
+      renderDeliveryCalcCard("idle");
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
 }
 
 // ==============================================================================
@@ -1071,7 +1477,8 @@ function finishOrderWhatsApp() {
 
   // Cálculos Finais
   const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const deliveryFee = isDelivery ? RESTAURANT_CONFIG.deliveryFee : 0;
+  const activeFee = (AppState.deliveryFee != null) ? AppState.deliveryFee : RESTAURANT_CONFIG.deliveryFee;
+  const deliveryFee = isDelivery ? activeFee : 0;
   let discountAmount = 0;
   if (AppState.appliedCoupon) {
     discountAmount = (subtotal * AppState.appliedCoupon.discountPercent) / 100;
@@ -1102,6 +1509,12 @@ function finishOrderWhatsApp() {
     if (referenceInput.value.trim()) {
       message += `- Referencia: ${stripEmojis(referenceInput.value)}\n`;
     }
+    if (AppState.deliveryDistanceKm != null) {
+      message += `- Distancia: ${AppState.deliveryDistanceKm} km\n`;
+      message += `- Previsao: ${AppState.deliveryTime || RESTAURANT_CONFIG.averageTime}\n`;
+    }
+    const destClean = `${stripEmojis(streetInput.value)}, ${stripEmojis(numberInput.value)}, ${stripEmojis(neighborhoodInput.value)}, Belo Horizonte - MG`;
+    message += `- Rota Maps: https://www.google.com/maps/dir/?api=1&origin=-19.9402136,-43.9809866&destination=${encodeURIComponent(destClean)}\n`;
     message += `\n`;
   } else {
     message += `*LOCAL DE RETIRADA:* ${RESTAURANT_CONFIG.address}\n\n`;
@@ -1128,7 +1541,11 @@ function finishOrderWhatsApp() {
     message += `- Desconto Cupom (${AppState.appliedCoupon.code}): - ${formatMoney(discountAmount)}\n`;
   }
   if (isDelivery) {
-    message += `- Taxa de entrega: ${formatMoney(deliveryFee)}\n`;
+    if (AppState.deliveryDistanceKm != null) {
+      message += `- Taxa de entrega: ${formatMoney(deliveryFee)} (${AppState.deliveryDistanceKm} km)\n`;
+    } else {
+      message += `- Taxa de entrega: ${formatMoney(deliveryFee)}\n`;
+    }
   } else {
     message += `- Taxa de entrega: Gratis (Retirada)\n`;
   }
@@ -1404,6 +1821,69 @@ function setupEventListeners() {
     });
   }
 
-  // 9. Botão Finalizar no WhatsApp
+  // 9. Cálculo Dinâmico de Entrega por Distância & Geocodificação
+  const btnCalcDistance = document.getElementById("btnCalculateDistance");
+  if (btnCalcDistance) {
+    btnCalcDistance.addEventListener("click", () => {
+      calculateDeliveryFeeFromForm(true);
+    });
+  }
+
+  const btnGps = document.getElementById("btnUseGpsLocation");
+  if (btnGps) {
+    btnGps.addEventListener("click", () => {
+      handleGpsLocation();
+    });
+  }
+
+  const btnSearchCep = document.getElementById("btnSearchCep");
+  if (btnSearchCep) {
+    btnSearchCep.addEventListener("click", () => {
+      searchCep();
+    });
+  }
+
+  const cepInput = document.getElementById("customerCep");
+  if (cepInput) {
+    cepInput.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "");
+      if (v.length > 5) {
+        v = v.slice(0, 5) + "-" + v.slice(5, 8);
+      }
+      e.target.value = v;
+
+      if (v.replace(/\D/g, "").length === 8) {
+        searchCep();
+      }
+    });
+
+    cepInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        searchCep();
+      }
+    });
+  }
+
+  // Cálculo automático suave ao terminar de preencher endereço (Debounce de 900ms)
+  let autoCalcTimeout = null;
+  const addressInputs = ["customerStreet", "customerNumber", "customerNeighborhood"];
+  addressInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", () => {
+        clearTimeout(autoCalcTimeout);
+        autoCalcTimeout = setTimeout(() => {
+          const street = document.getElementById("customerStreet").value.trim();
+          const neighborhood = document.getElementById("customerNeighborhood").value.trim();
+          if (street && neighborhood) {
+            calculateDeliveryFeeFromForm(false);
+          }
+        }, 900);
+      });
+    }
+  });
+
+  // 10. Botão Finalizar no WhatsApp
   document.getElementById("btnFinishOrder").addEventListener("click", finishOrderWhatsApp);
 }

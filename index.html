@@ -324,7 +324,7 @@
                   <span class="radio-emoji">🛵</span>
                   <div class="radio-texts">
                     <strong>Entrega (Delivery)</strong>
-                    <span class="delivery-cost-tag" id="deliveryFeeLabel">Taxa: R$ 6,00</span>
+                    <span class="delivery-cost-tag" id="deliveryFeeLabel">A partir de R$ 5,00</span>
                   </div>
                 </div>
               </label>
@@ -371,7 +371,24 @@
 
           <!-- Campos de Endereço (Exibidos apenas para Delivery) -->
           <div class="form-group-block" id="addressFieldsContainer">
-            <label class="form-section-title">Endereço de Entrega</label>
+            <div class="address-header-row">
+              <label class="form-section-title" style="margin-bottom: 0;">Endereço de Entrega</label>
+              <button type="button" class="btn-gps-trigger" id="btnUseGpsLocation" title="Obter localização pelo GPS do celular">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                </svg>
+                Usar meu GPS
+              </button>
+            </div>
+
+            <!-- Campo de CEP Opcional para preenchimento rápido -->
+            <div class="form-field">
+              <label for="customerCep">CEP (Opcional - busca automática)</label>
+              <div class="input-with-action">
+                <input type="text" id="customerCep" placeholder="Ex: 30421-112" maxlength="9" autocomplete="postal-code">
+                <button type="button" class="btn-search-cep" id="btnSearchCep">Buscar</button>
+              </div>
+            </div>
 
             <div class="form-row-2">
               <div class="form-field flex-3">
@@ -387,7 +404,7 @@
             <div class="form-row-2">
               <div class="form-field flex-2">
                 <label for="customerNeighborhood">Bairro *</label>
-                <input type="text" id="customerNeighborhood" placeholder="Ex: Jardim América"
+                <input type="text" id="customerNeighborhood" placeholder="Ex: Salgado Filho ou Jardim América"
                   autocomplete="address-level2">
               </div>
               <div class="form-field flex-2">
@@ -399,6 +416,26 @@
             <div class="form-field">
               <label for="customerReference">Ponto de Referência</label>
               <input type="text" id="customerReference" placeholder="Ex: Próximo à praça ou supermercado">
+            </div>
+
+            <!-- Botão de Verificação e Cálculo de Taxa -->
+            <button type="button" class="btn-calc-distance" id="btnCalculateDistance">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              <span>Verificar Distância e Calcular Taxa</span>
+            </button>
+
+            <!-- Card de Status do Cálculo de Distância / Taxa -->
+            <div class="delivery-calc-card" id="deliveryCalcCard">
+              <div class="calc-card-idle">
+                <span class="calc-icon">📍</span>
+                <div class="calc-text">
+                  <strong>Taxa calculada por distância real</strong>
+                  <small>Informe sua rua, número e bairro para consultar o valor exato até a Cailu Burger (Salgado Filho).</small>
+                </div>
+              </div>
             </div>
           </div>
 
