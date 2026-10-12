@@ -18,6 +18,7 @@ const AppState = {
   selectedOptionType: null, // Ex: "Zero Açúcar" ou "Normal (Original)"
   selectedOptionSize: null,  // Ex: { id: "Lata 350ml", name: "Lata 350ml", price: 6.50 }
   selectedCustomGroupOptions: {}, // Ex: { "bebida_combo": optionObj }
+  selectedAddons: {},         // Ex: { "addon-bacon": 2, "addon-carne-120g": 1 } — total compartilhado (max MAX_ADDONS_TOTAL)
   deliveryDistanceKm: null,
   deliveryFee: RESTAURANT_CONFIG.deliveryFee,
   deliveryTime: RESTAURANT_CONFIG.averageTime,
@@ -443,6 +444,7 @@ window.openProductModal = function (productId) {
 
   AppState.selectedProductForModal = prod;
   AppState.modalQuantity = 1;
+  AppState.selectedAddons = {}; // Limpa acréscimos anteriores
 
   document.getElementById("modalProductTitle").textContent = prod.name;
   document.getElementById("modalProductDesc").textContent = prod.description;
@@ -659,10 +661,24 @@ window.openProductModal = function (productId) {
       }
     }
 
+
   } else {
     optionsWrapper.style.display = "none";
     AppState.selectedOptionType = null;
     AppState.selectedOptionSize = null;
+  }
+
+  // Seção de Acréscimos para Burgers Individuais (artesanais e smash)
+  const addonsContainer = document.getElementById("modalAddonsContainer");
+  const isBurgerIndividual = prod.category === "artesanais" || prod.category === "smash";
+  if (addonsContainer) {
+    if (isBurgerIndividual && BURGER_ADDONS && BURGER_ADDONS.length > 0) {
+      addonsContainer.style.display = "block";
+      renderAddonsUI();
+    } else {
+      addonsContainer.style.display = "none";
+      addonsContainer.innerHTML = "";
+    }
   }
 
   updateModalPrice();
@@ -671,6 +687,7 @@ window.openProductModal = function (productId) {
   backdrop.classList.add("active");
   backdrop.setAttribute("aria-hidden", "false");
 };
+
 
 function closeProductModal() {
   const backdrop = document.getElementById("productModalBackdrop");
@@ -694,15 +711,115 @@ function updateModalPrice() {
     });
   }
 
-  const total = unitPrice * AppState.modalQuantity;
+  // Soma acréscimos selecionados (objeto { addonId: qty })
+  const addonsTotal = getAddonsTotalPrice();
+  const total = (unitPrice + addonsTotal) * AppState.modalQuantity;
 
   document.getElementById("modalQtyDisplay").textContent = AppState.modalQuantity;
   document.getElementById("modalAddBtnPrice").textContent = formatMoney(total);
 
   const currentPriceEl = document.getElementById("modalProductCurrentPrice");
   if (currentPriceEl && !prod.originalPrice) {
-    currentPriceEl.textContent = formatMoney(unitPrice);
+    currentPriceEl.textContent = formatMoney(unitPrice + addonsTotal);
   }
+}
+
+/**
+ * Retorna o total em R$ de todos os acréscimos selecionados
+ */
+function getAddonsTotalPrice() {
+  let total = 0;
+  for (const [addonId, qty] of Object.entries(AppState.selectedAddons)) {
+    if (qty <= 0) continue;
+    const addonObj = BURGER_ADDONS.find(a => a.id === addonId);
+    if (addonObj) total += addonObj.price * qty;
+  }
+  return total;
+}
+
+/**
+ * Retorna a quantidade total de acréscimos (soma de todas as quantidades)
+ */
+function getAddonsTotalCount() {
+  return Object.values(AppState.selectedAddons).reduce((sum, qty) => sum + qty, 0);
+}
+
+/**
+ * Renderiza a seção de acréscimos no modal com controles de quantidade por addon
+ */
+function renderAddonsUI() {
+  const container = document.getElementById("modalAddonsContainer");
+  if (!container) return;
+
+  const totalCount = getAddonsTotalCount();
+  const atLimit = totalCount >= MAX_ADDONS_TOTAL;
+
+  container.innerHTML = `
+    <div class="addons-section-header">
+      <div class="addons-header-left">
+        <span class="addons-section-title">Acréscimos</span>
+        <span class="addons-section-hint">Opcional</span>
+      </div>
+      <div class="addons-counter-badge ${atLimit ? 'at-limit' : ''}" id="addonsCounterBadge">
+        <span id="addonsCounterText">${totalCount}/${MAX_ADDONS_TOTAL}</span>
+      </div>
+    </div>
+    <div class="addons-list" id="addonsList">
+      ${BURGER_ADDONS.map(addon => {
+        const qty = AppState.selectedAddons[addon.id] || 0;
+        const plusDisabled = atLimit && qty === 0 ? 'disabled' : (atLimit ? 'disabled' : '');
+        const hasQty = qty > 0;
+        return `
+          <div class="addon-row ${hasQty ? 'has-qty' : ''}" data-addon-id="${addon.id}">
+            <div class="addon-row-left">
+              <span class="addon-chip-icon">${addon.icon || '+'}</span>
+              <div class="addon-chip-info">
+                <span class="addon-chip-name">${addon.name}</span>
+                <span class="addon-chip-price">+ ${formatMoney(addon.price)} / un.</span>
+              </div>
+            </div>
+            <div class="addon-row-qty">
+              <button type="button" class="addon-qty-btn minus" data-addon-id="${addon.id}" ${qty === 0 ? 'disabled' : ''} aria-label="Remover ${addon.name}">−</button>
+              <span class="addon-qty-num">${qty}</span>
+              <button type="button" class="addon-qty-btn plus" data-addon-id="${addon.id}" ${atLimit ? 'disabled' : ''} aria-label="Adicionar ${addon.name}">+</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    ${atLimit ? `<div class="addons-limit-notice">Limite de ${MAX_ADDONS_TOTAL} acréscimos atingido.</div>` : ''}
+  `;
+
+  // Listeners dos botões de quantidade
+  container.querySelectorAll(".addon-qty-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const addonId = btn.dataset.addonId;
+      const isMinus = btn.classList.contains("minus");
+
+      const currentQty = AppState.selectedAddons[addonId] || 0;
+      const currentTotal = getAddonsTotalCount();
+
+      if (isMinus) {
+        if (currentQty > 0) {
+          AppState.selectedAddons[addonId] = currentQty - 1;
+          if (AppState.selectedAddons[addonId] === 0) {
+            delete AppState.selectedAddons[addonId];
+          }
+        }
+      } else {
+        if (currentTotal < MAX_ADDONS_TOTAL) {
+          AppState.selectedAddons[addonId] = currentQty + 1;
+        } else {
+          showToast(`Máximo de ${MAX_ADDONS_TOTAL} acréscimos por burger atingido.`, "info");
+          return;
+        }
+      }
+
+      updateModalPrice();
+      renderAddonsUI(); // Rerenderiza para refletir novos estados de limite
+    });
+  });
 }
 
 // ==============================================================================
@@ -1882,9 +1999,43 @@ function setupEventListeners() {
 
       showToast(`Adicionado: ${customName}`);
     } else {
-      // Produto normal (Burgers, etc.)
-      addToCart(prod, AppState.modalQuantity, notes);
-      showToast(`Adicionado: ${prod.name}`);
+      // Produto normal (Burgers individuais com possíveis acréscimos)
+      const addonsTotal = getAddonsTotalPrice();
+      const totalAddonCount = getAddonsTotalCount();
+
+      if (totalAddonCount > 0) {
+        // Tem acréscimos: cria item customizado com resumo de qtd por addon
+        const addonsSummary = Object.entries(AppState.selectedAddons)
+          .filter(([, qty]) => qty > 0)
+          .map(([addonId, qty]) => {
+            const a = BURGER_ADDONS.find(x => x.id === addonId);
+            if (!a) return null;
+            return `${a.icon || ''} ${qty}x ${a.name} (+${formatMoney(a.price * qty)})`.trim();
+          })
+          .filter(Boolean);
+
+        const addonsIdPart = Object.entries(AppState.selectedAddons)
+          .filter(([, qty]) => qty > 0)
+          .map(([id, qty]) => `${id}x${qty}`)
+          .join("_");
+
+        const uniqueId = `${prod.id}_${addonsIdPart}_${notes ? 'n' + notes.length : 'n0'}`;
+
+        addCustomItemToCart({
+          id: uniqueId,
+          originalId: prod.id,
+          name: prod.name,
+          price: prod.price + addonsTotal,
+          quantity: AppState.modalQuantity,
+          image: prod.image,
+          notes: notes,
+          optionsSummary: addonsSummary
+        });
+        showToast(`Adicionado: ${prod.name} + ${totalAddonCount} acréscimo(s)`);
+      } else {
+        addToCart(prod, AppState.modalQuantity, notes);
+        showToast(`Adicionado: ${prod.name}`);
+      }
     }
 
     closeProductModal();

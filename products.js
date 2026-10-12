@@ -106,6 +106,19 @@ const CATEGORIES = [
   { id: "acompanhamentos", name: "Acompanhamentos", icon: "🍟" }
 ];
 
+// Acréscimos oficiais para burgers individuais (Artesanais e Smash)
+const BURGER_ADDONS = [
+  { id: "addon-carne-120g", name: "Carne 120g (Blend Artesanal)", price: 9.90, icon: "🥩", description: "Blend bovino 120g grelhado no ponto" },
+  { id: "addon-bacon", name: "Bacon Crocante", price: 3.90, icon: "🥓", description: "Fatias crocantes e sequinhas" },
+  { id: "addon-cheddar", name: "Cheddar Cremoso", price: 5.00, icon: "🧀", description: "Cheddar cremoso derretido" },
+  { id: "addon-queijo", name: "Queijo Prato Derretido", price: 3.00, icon: "🧀", description: "Fatia generosa derretida" },
+  { id: "addon-cebola-caramelizada", name: "Cebola Caramelizada", price: 8.90, icon: "🧅", description: "Caramelizada na chapa" },
+  { id: "addon-aneis-cebola", name: "Anéis de Cebola Empanada", price: 3.90, icon: "🧅", description: "Crocantes e dourados" }
+];
+
+// Limite máximo compartilhado entre TODOS os acréscimos de um mesmo burger
+const MAX_ADDONS_TOTAL = 6;
+
 // Opções compartilhadas para seleção estilo iFood nos combos
 const COMBO_BEVERAGE_OPTIONS = [
   {
@@ -406,7 +419,9 @@ const PRODUCTS = [
     price: 24.90,
     image: "img/cailu-tradicional.jpeg",
     badge: "O Clássico",
-    serves: "Individual"
+    serves: "Individual",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
   {
     id: "cailu-bacon-love",
@@ -417,7 +432,9 @@ const PRODUCTS = [
     price: 28.90,
     image: "img/cailu-bacon-love.jpeg",
     badge: "Mais Pedido",
-    serves: "Individual"
+    serves: "Individual",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
   {
     id: "cailu-crispy",
@@ -428,7 +445,9 @@ const PRODUCTS = [
     price: 35.90,
     image: "img/cailu-crispy.jpeg",
     badge: "Super Crocante",
-    serves: "Individual"
+    serves: "Individual",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
   {
     id: "cailu-love-duplo",
@@ -439,7 +458,9 @@ const PRODUCTS = [
     price: 37.90,
     image: "img/cailu-duplo.jpeg",
     badge: "Duplo Blend (240g)",
-    serves: "Individual Grande"
+    serves: "Individual Grande",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
 
   // --- SMASH BURGERS INDIVIDUAIS ---
@@ -452,7 +473,9 @@ const PRODUCTS = [
     price: 20.00,
     image: "img/smash-bacon-melt.jpeg",
     badge: "Smash Especial",
-    serves: "Individual"
+    serves: "Individual",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
   {
     id: "smash-cebola-caramelizada",
@@ -463,7 +486,9 @@ const PRODUCTS = [
     price: 20.00,
     image: "img/smash-cebola-caramelizada.jpeg",
     badge: "Sabor Marcante",
-    serves: "Individual"
+    serves: "Individual",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
   {
     id: "smash-classico-irresistivel",
@@ -474,7 +499,9 @@ const PRODUCTS = [
     price: 20.00,
     image: "img/smash-classico-irresistivel.jpeg",
     badge: "Clássico Smash",
-    serves: "Individual"
+    serves: "Individual",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
   {
     id: "smash-crispy",
@@ -485,7 +512,9 @@ const PRODUCTS = [
     price: 20.00,
     image: "img/smash-crispy.jpeg",
     badge: "Clássico Smash",
-    serves: "Individual"
+    serves: "Individual",
+    hasAddons: true,
+    addons: BURGER_ADDONS
   },
 
   // --- BEBIDAS COM ESCOLHA DE TAMANHO E NORMAL/ZERO ---
