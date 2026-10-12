@@ -766,10 +766,10 @@ function renderAddonsUI() {
     </div>
     <div class="addons-list" id="addonsList">
       ${BURGER_ADDONS.map(addon => {
-        const qty = AppState.selectedAddons[addon.id] || 0;
-        const plusDisabled = atLimit && qty === 0 ? 'disabled' : (atLimit ? 'disabled' : '');
-        const hasQty = qty > 0;
-        return `
+    const qty = AppState.selectedAddons[addon.id] || 0;
+    const plusDisabled = atLimit && qty === 0 ? 'disabled' : (atLimit ? 'disabled' : '');
+    const hasQty = qty > 0;
+    return `
           <div class="addon-row ${hasQty ? 'has-qty' : ''}" data-addon-id="${addon.id}">
             <div class="addon-row-left">
               <span class="addon-chip-icon">${addon.icon || '+'}</span>
@@ -785,7 +785,7 @@ function renderAddonsUI() {
             </div>
           </div>
         `;
-      }).join('')}
+  }).join('')}
     </div>
     ${atLimit ? `<div class="addons-limit-notice">Limite de ${MAX_ADDONS_TOTAL} acréscimos atingido.</div>` : ''}
   `;
@@ -1668,12 +1668,12 @@ function handleGpsLocation() {
 // ==============================================================================
 function finishOrderWhatsApp() {
   // 1. Validar se há itens na sacola
-  if (AppState.cart.length === 0) {
+  if (!AppState.cart || AppState.cart.length === 0) {
     showToast("Adicione pelo menos um item à sacola para pedir!", "error");
     return;
   }
 
-  // 2. Coletar dados
+  // 2. Coletar dados dos campos
   const nameInput = document.getElementById("customerName");
   const phoneInput = document.getElementById("customerPhone");
   const streetInput = document.getElementById("customerStreet");
@@ -1687,53 +1687,63 @@ function finishOrderWhatsApp() {
   const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
   const changeInput = document.getElementById("customerChange");
 
-  // Validação do Nome
-  if (!nameInput.value.trim()) {
-    nameInput.classList.add("field-error");
-    nameInput.focus();
-    showToast("Por favor, digite seu nome completo.", "error");
-    return;
-  }
-  nameInput.classList.remove("field-error");
-
-  // Validação do Telefone
-  if (!phoneInput.value.trim()) {
-    phoneInput.classList.add("field-error");
-    phoneInput.focus();
-    showToast("Por favor, informe seu número de WhatsApp.", "error");
-    return;
-  }
-  phoneInput.classList.remove("field-error");
-
-  // Se for Delivery, validar campos de endereço
-  if (isDelivery) {
-    if (!streetInput.value.trim()) {
-      streetInput.classList.add("field-error");
-      streetInput.focus();
-      showToast("Informe a rua/avenida para entrega.", "error");
-      return;
-    }
-    streetInput.classList.remove("field-error");
-
-    if (!numberInput.value.trim()) {
-      numberInput.classList.add("field-error");
-      numberInput.focus();
-      showToast("Informe o número do endereço.", "error");
-      return;
-    }
-    numberInput.classList.remove("field-error");
-
-    if (!neighborhoodInput.value.trim()) {
-      neighborhoodInput.classList.add("field-error");
-      neighborhoodInput.focus();
-      showToast("Informe o seu bairro.", "error");
-      return;
-    }
-    neighborhoodInput.classList.remove("field-error");
-  }
-
-  // Cálculos Finais
+  // Cálculos prévios
   const subtotal = AppState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  // Validação de Pedido Mínimo da Hambúrgueria (R$ 20,00)
+  if (subtotal < (RESTAURANT_CONFIG.minOrder || 0)) {
+    showToast(`O valor mínimo para pedidos é de ${formatMoney(RESTAURANT_CONFIG.minOrder)}. Adicione mais itens!`, "error");
+    return;
+  }
+
+  // Array para coletar todos os campos que falharem na validação
+  const invalidFields = [];
+
+  // Validação do Nome Completo (Obrigatório - no mínimo 2 nomes / nome e sobrenome)
+  const nameVal = nameInput ? nameInput.value.trim() : "";
+  const nameParts = nameVal.split(/\s+/).filter(part => part.length >= 2);
+  if (!nameVal || nameParts.length < 2 || nameVal.length < 5) {
+    invalidFields.push({ el: nameInput, msg: "Por favor, informe seu nome e sobrenome (mínimo 2 nomes)." });
+  } else if (nameInput) {
+    nameInput.classList.remove("field-error");
+  }
+
+  // Validação do WhatsApp com DDD (Obrigatório - mínimo 10 dígitos numéricos)
+  const cleanPhone = phoneInput ? phoneInput.value.replace(/\D/g, "") : "";
+  if (!cleanPhone || cleanPhone.length < 10) {
+    invalidFields.push({ el: phoneInput, msg: "Informe seu WhatsApp com DDD completo (ex: 31 99999-9999)." });
+  } else if (phoneInput) {
+    phoneInput.classList.remove("field-error");
+  }
+
+  // Se for Entrega (Delivery), validar campos de endereço obrigatórios
+  if (isDelivery) {
+    if (!streetInput || !streetInput.value.trim()) {
+      invalidFields.push({ el: streetInput, msg: "Informe a rua ou avenida para entrega." });
+    } else {
+      streetInput.classList.remove("field-error");
+    }
+
+    if (!numberInput || !numberInput.value.trim()) {
+      invalidFields.push({ el: numberInput, msg: "Informe o número do endereço de entrega." });
+    } else {
+      numberInput.classList.remove("field-error");
+    }
+
+    if (!neighborhoodInput || !neighborhoodInput.value.trim()) {
+      invalidFields.push({ el: neighborhoodInput, msg: "Informe o seu bairro para entrega." });
+    } else {
+      neighborhoodInput.classList.remove("field-error");
+    }
+
+    // Bloquear se o raio máximo tiver sido excedido (> 10 km)
+    if (AppState.deliveryExceedsMax) {
+      showToast("Endereço fora do raio de entrega de 10 km da Cailu Burger. Escolha 'Retirada no Balcão'.", "error");
+      return;
+    }
+  }
+
+  // Calcular valor final para validação de troco
   const activeFee = (AppState.deliveryFee != null) ? AppState.deliveryFee : RESTAURANT_CONFIG.deliveryFee;
   const deliveryFee = isDelivery ? activeFee : 0;
   let discountAmount = 0;
@@ -1741,6 +1751,34 @@ function finishOrderWhatsApp() {
     discountAmount = (subtotal * AppState.appliedCoupon.discountPercent) / 100;
   }
   const grandTotal = Math.max(0, subtotal - discountAmount + deliveryFee);
+
+  // Se a forma for Dinheiro e foi preenchido valor de troco, validar se é suficiente
+  if (paymentMethod === "Dinheiro" && changeInput && changeInput.value.trim()) {
+    const changeVal = parseFloat(changeInput.value);
+    if (isNaN(changeVal) || changeVal < grandTotal) {
+      invalidFields.push({ el: changeInput, msg: `O valor para troco deve ser maior que o total do pedido (${formatMoney(grandTotal)}).` });
+    } else {
+      changeInput.classList.remove("field-error");
+    }
+  }
+
+  // Se houver qualquer campo obrigatório pendente: BLOQUEIA TOTALMENTE O ENVIO
+  if (invalidFields.length > 0) {
+    // 1. Destaca todos os campos faltantes com borda vermelha e tremor
+    invalidFields.forEach(item => {
+      if (item.el) item.el.classList.add("field-error");
+    });
+
+    // 2. Rola suavemente a sacola até o primeiro campo obrigatório pendente e dá foco
+    if (invalidFields[0].el) {
+      invalidFields[0].el.scrollIntoView({ behavior: "smooth", block: "center" });
+      invalidFields[0].el.focus();
+    }
+
+    // 3. Notifica o cliente do erro
+    showToast(invalidFields[0].msg, "error");
+    return; // IMPEDE A MENSAGEM PARA O WHATSAPP
+  }
 
   // Salvar no LocalStorage para visitas futuras
   saveCustomerData();
@@ -1766,8 +1804,7 @@ function finishOrderWhatsApp() {
     if (referenceInput.value.trim()) {
       message += `- Referencia: ${stripEmojis(referenceInput.value)}\n`;
     }
-    if (AppState.deliveryDistanceKm != null) {
-      message += `- Distancia: ${AppState.deliveryDistanceKm} km\n`;
+    if (AppState.deliveryTime || RESTAURANT_CONFIG.averageTime) {
       message += `- Previsao: ${AppState.deliveryTime || RESTAURANT_CONFIG.averageTime}\n`;
     }
     const destClean = `${stripEmojis(streetInput.value)}, ${stripEmojis(numberInput.value)}, ${stripEmojis(neighborhoodInput.value)}, Belo Horizonte - MG`;
@@ -1798,11 +1835,7 @@ function finishOrderWhatsApp() {
     message += `- Desconto Cupom (${AppState.appliedCoupon.code}): - ${formatMoney(discountAmount)}\n`;
   }
   if (isDelivery) {
-    if (AppState.deliveryDistanceKm != null) {
-      message += `- Taxa de entrega: ${formatMoney(deliveryFee)} (${AppState.deliveryDistanceKm} km)\n`;
-    } else {
-      message += `- Taxa de entrega: ${formatMoney(deliveryFee)}\n`;
-    }
+    message += `- Taxa de entrega: ${formatMoney(deliveryFee)}\n`;
   } else {
     message += `- Taxa de entrega: Gratis (Retirada)\n`;
   }
@@ -1814,7 +1847,8 @@ function finishOrderWhatsApp() {
     message += `- Precisa de troco para: ${formatMoney(changeInput.value)}\n`;
   }
   if (paymentMethod === "PIX") {
-    message += `- Chave PIX: ${RESTAURANT_CONFIG.pixKey}\n`;
+    const pixRawNumber = (RESTAURANT_CONFIG.pixKey || "").replace(/\D/g, "");
+    message += `- Chave PIX: ${pixRawNumber || RESTAURANT_CONFIG.pixKey}\n`;
   }
 
   if (notesInput.value.trim()) {
@@ -2058,22 +2092,28 @@ function setupEventListeners() {
   const btnCoupon = document.getElementById("btnApplyCoupon");
   const couponFeedback = document.getElementById("couponFeedback");
 
-  btnCoupon.addEventListener("click", () => {
-    const code = couponInput.value.trim().toUpperCase();
-    if (code === "CAILU10" || code === "PRIMEIRACOMPRA") {
-      AppState.appliedCoupon = { code: code, discountPercent: 10 };
-      couponFeedback.className = "coupon-feedback success";
-      couponFeedback.textContent = "✓ Cupom de 10% de desconto ativado!";
-      showToast("Cupom de 10% aplicado com sucesso!");
-    } else if (code === "") {
-      AppState.appliedCoupon = null;
-      couponFeedback.textContent = "";
-    } else {
-      couponFeedback.className = "coupon-feedback error";
-      couponFeedback.textContent = "Cupom inválido ou expirado.";
-    }
-    updateCartUI();
-  });
+  if (btnCoupon) {
+    btnCoupon.addEventListener("click", () => {
+      const code = couponInput ? couponInput.value.trim().toUpperCase() : "";
+      if (code === "CAILU10" || code === "PRIMEIRACOMPRA") {
+        AppState.appliedCoupon = { code: code, discountPercent: 10 };
+        if (couponFeedback) {
+          couponFeedback.className = "coupon-feedback success";
+          couponFeedback.textContent = "✓ Cupom de 10% de desconto ativado!";
+        }
+        showToast("Cupom de 10% aplicado com sucesso!");
+      } else if (code === "") {
+        AppState.appliedCoupon = null;
+        if (couponFeedback) couponFeedback.textContent = "";
+      } else {
+        if (couponFeedback) {
+          couponFeedback.className = "coupon-feedback error";
+          couponFeedback.textContent = "Cupom inválido ou expirado.";
+        }
+      }
+      updateCartUI();
+    });
+  }
 
   // 6. Alternância de Tipo de Pedido (Delivery x Retirada)
   const deliveryRadios = document.querySelectorAll('input[name="orderType"]');
@@ -2104,8 +2144,9 @@ function setupEventListeners() {
   const btnCopyPix = document.getElementById("btnCopyPix");
   if (btnCopyPix) {
     btnCopyPix.addEventListener("click", () => {
-      navigator.clipboard.writeText(RESTAURANT_CONFIG.pixKey).then(() => {
-        showToast("Chave PIX copiada para a área de transferência!");
+      const pixOnlyNumber = (RESTAURANT_CONFIG.pixKey || "").replace(/\D/g, "");
+      navigator.clipboard.writeText(pixOnlyNumber || RESTAURANT_CONFIG.pixKey).then(() => {
+        showToast("Chave PIX (apenas números) copiada com sucesso!");
       }).catch(() => {
         showToast("Selecione e copie a chave manualmente.", "info");
       });
@@ -2175,6 +2216,34 @@ function setupEventListeners() {
     }
   });
 
-  // 10. Botão Finalizar no WhatsApp
+  // 10. Limpeza imediata de erros nos campos obrigatórios ao digitar
+  const requiredInputs = ["customerName", "customerPhone", "customerStreet", "customerNumber", "customerNeighborhood", "customerChange"];
+  requiredInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("input", () => {
+        el.classList.remove("field-error");
+      });
+    }
+  });
+
+  // 11. Máscara amigável e automática para WhatsApp: (31) 99999-9999
+  const phoneField = document.getElementById("customerPhone");
+  if (phoneField) {
+    phoneField.addEventListener("input", (e) => {
+      let v = e.target.value.replace(/\D/g, "");
+      if (v.length > 11) v = v.slice(0, 11);
+      if (v.length > 6) {
+        v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+      } else if (v.length > 2) {
+        v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
+      } else if (v.length > 0) {
+        v = `(${v}`;
+      }
+      e.target.value = v;
+    });
+  }
+
+  // 12. Botão Finalizar no WhatsApp
   document.getElementById("btnFinishOrder").addEventListener("click", finishOrderWhatsApp);
 }

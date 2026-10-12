@@ -35,7 +35,8 @@ const RESTAURANT_CONFIG = {
   },
   instagram: "@cailuburger",
   instagramUrl: "https://www.instagram.com/cailuburger/",
-  pixKey: "64875012000142 (CNPJ / Luana Fátima)"
+  pixKey: "64875012000142",
+  pixBeneficiary: "CNPJ / Luana Fátima"
 };
 
 // Tabela Oficial de Taxas e Tempos por Raio de Distância (km)

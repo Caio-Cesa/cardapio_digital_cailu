@@ -1538,8 +1538,9 @@ img {
 }
 
 .form-field input.field-error, .form-field textarea.field-error {
-  border-color: var(--color-danger);
-  animation: shake-error 0.3s;
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+  animation: shake-error 0.35s ease;
 }
 
 @keyframes shake-error {
