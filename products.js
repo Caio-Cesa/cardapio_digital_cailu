@@ -29,9 +29,24 @@ const RESTAURANT_CONFIG = {
   openingHours: {
     days: "Terça a Domingo",
     open: 18,        // 18:00
-    openMinutes: 30,
-    close: 23,       // 23:30
-    closeMinutes: 30
+    openMinutes: 30, // 18:30
+    close: 23,       // 23:00
+    closeMinutes: 30, // 23:30
+
+    // Dias normais da semana em que a loja NÃO abre:
+    // 0 = Domingo, 1 = Segunda, 2 = Terça, 3 = Quarta, 4 = Quinta, 5 = Sexta, 6 = Sábado
+    closedDays: [1], // Padrão: Segunda (1)
+
+    // =========================================================================
+    // CASOS ESPECIAIS / FERIADOS:
+    // Para ABRIR em um dia que normalmente estaria fechado (como feriado na segunda):
+    // Defina 'forceOpenToday: true'. Quando voltar ao normal, altere para 'false'.
+    // =========================================================================
+    forceOpenToday: true,
+
+    // Para FORÇAR FECHADO em um dia normal de funcionamento (ex: folga/reforma):
+    // Defina 'forceClosedToday: true'. Padrão: false
+    forceClosedToday: false
   },
   instagram: "@cailuburger",
   instagramUrl: "https://www.instagram.com/cailuburger/",

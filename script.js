@@ -118,14 +118,27 @@ function checkStoreStatus() {
   const minute = now.getMinutes();
   const currentTime = hour * 60 + minute;
 
-  const cfg = RESTAURANT_CONFIG.openingHours;
-  const openTime = cfg.open * 60 + cfg.openMinutes;
-  const closeTime = cfg.close * 60 + cfg.closeMinutes;
+  const cfg = RESTAURANT_CONFIG.openingHours || {};
+  const openTime = (cfg.open ?? 18) * 60 + (cfg.openMinutes ?? 30);
+  const closeTime = (cfg.close ?? 23) * 60 + (cfg.closeMinutes ?? 30);
 
-  // Fechado Segunda e Terça
-  const isClosedDay = day === 1 || day === 2;
+  // Lista de dias da semana normalmente fechados (padrão: 1 = Segunda, 2 = Terça)
+  const closedDaysList = Array.isArray(cfg.closedDays) ? cfg.closedDays : [1, 2];
+  let isClosedDay = closedDaysList.includes(day);
+
+  // CASOS ESPECIAIS / FERIADOS:
+  // Se forceOpenToday estiver ativo, ignora o dia fechado
+  if (cfg.forceOpenToday === true) {
+    isClosedDay = false;
+  }
+
   const isOpenHours = currentTime >= openTime && currentTime <= closeTime;
-  const isOpen = !isClosedDay && isOpenHours;
+  let isOpen = !isClosedDay && isOpenHours;
+
+  // Se forceClosedToday estiver ativo, força como fechado
+  if (cfg.forceClosedToday === true) {
+    isOpen = false;
+  }
 
   if (isOpen) {
     badge.classList.remove("closed");
@@ -144,6 +157,7 @@ function checkStoreStatus() {
 document.addEventListener("DOMContentLoaded", () => {
   initRestaurantInfo();
   checkStoreStatus();
+  setInterval(checkStoreStatus, 60000); // Atualiza o status automaticamente a cada 1 minuto
   renderCategories();
   renderProducts();
   loadSavedCustomerData();
@@ -187,7 +201,13 @@ function initRestaurantInfo() {
   }
 
   const hoursText = `${String(RESTAURANT_CONFIG.openingHours.open).padStart(2, '0')}:${String(RESTAURANT_CONFIG.openingHours.openMinutes).padStart(2, '0')} às ${String(RESTAURANT_CONFIG.openingHours.close).padStart(2, '0')}:${String(RESTAURANT_CONFIG.openingHours.closeMinutes).padStart(2, '0')}`;
-  document.getElementById("statHours").textContent = hoursText;
+  const statHoursEl = document.getElementById("statHours");
+  if (statHoursEl) statHoursEl.textContent = hoursText;
+
+  const footerHoursEl = document.getElementById("footerHours");
+  if (footerHoursEl && RESTAURANT_CONFIG.openingHours.days) {
+    footerHoursEl.textContent = `${RESTAURANT_CONFIG.openingHours.days} das ${hoursText}`;
+  }
 
   const deliveryFeeLabel = document.getElementById("deliveryFeeLabel");
   if (deliveryFeeLabel) {
