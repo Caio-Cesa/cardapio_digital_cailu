@@ -1074,13 +1074,10 @@ async function geocodeAddress(street, number, neighborhood, city = "Belo Horizon
 
   for (const q of queries) {
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=pt-BR&email=cailuburger@gmail.com&q=${encodeURIComponent(q)}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch(url, {
-        signal: controller.signal,
-        headers: { "Accept-Language": "pt-BR" }
-      });
+      const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
 
       if (!res.ok) continue;
@@ -1330,13 +1327,95 @@ async function searchCep() {
 /**
  * Obtém a localização atual pelo GPS do celular do cliente
  */
+/**
+ * Converte coordenadas (lat/lng) no endereço físico (Rua, Bairro, CEP, Número)
+ * com fallback inteligente para garantir funcionamento liso no navegador
+ */
+async function reverseGeocodeCoords(lat, lng) {
+  const result = {
+    street: "",
+    neighborhood: "",
+    cep: "",
+    number: "",
+    city: "Belo Horizonte"
+  };
+
+  // 1. Consulta Nominatim com GET puro (sem cabeçalhos customizados para evitar 403 de CORS preflight)
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=pt-BR&email=cailuburger@gmail.com`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address || {};
+
+      result.street = addr.road || addr.pedestrian || addr.street || addr.footway || addr.path || addr.residential || "";
+      if (!result.street && data.name) result.street = data.name;
+
+      result.neighborhood = addr.suburb || addr.neighbourhood || addr.city_district || addr.quarter || addr.residential || "";
+      result.number = addr.house_number || "";
+      result.cep = addr.postcode || "";
+      if (addr.city) result.city = addr.city;
+
+      if (result.street || result.neighborhood) {
+        return result;
+      }
+    }
+  } catch (e) {
+    console.warn("Nominatim reverse falhou, tentando fallback:", e);
+  }
+
+  // 2. Fallback: BigDataCloud (Client-side API gratuita para navegadores)
+  try {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=pt`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (!result.neighborhood && data.localityInfo && data.localityInfo.administrative) {
+        const admin = data.localityInfo.administrative;
+        const dist = admin.find(a => a.adminLevel === 9 || a.order === 11 || a.adminLevel === 10);
+        if (dist) result.neighborhood = dist.name;
+      }
+      if (!result.neighborhood && data.locality) {
+        result.neighborhood = data.locality;
+      }
+      if (data.postcode && !result.cep) {
+        result.cep = data.postcode;
+      }
+    }
+  } catch (e) {
+    console.warn("Fallback BigDataCloud falhou:", e);
+  }
+
+  return result;
+}
+
+/**
+ * Obtém a localização atual pelo GPS do celular do cliente e preenche o modal
+ */
 function handleGpsLocation() {
   if (!navigator.geolocation) {
     showToast("Geolocalização não suportada pelo seu navegador.", "error");
     return;
   }
 
-  showToast("Obtendo sua localização via GPS...", "info");
+  const btnGps = document.getElementById("btnUseGpsLocation");
+  if (btnGps) {
+    btnGps.classList.add("loading");
+    btnGps.innerHTML = `
+      <svg class="calc-spinner" style="width:12px;height:12px;border-width:1.5px;display:inline-block;" viewBox="0 0 24 24"></svg>
+      Obtendo GPS...
+    `;
+  }
+
+  showToast("Obtendo localização pelo GPS...", "info");
   renderDeliveryCalcCard("loading");
 
   navigator.geolocation.getCurrentPosition(
@@ -1349,6 +1428,59 @@ function handleGpsLocation() {
       AppState.deliveryCoords = userCoords;
 
       try {
+        // 1. Obter endereço físico reverso a partir das coordenadas do GPS
+        const addressData = await reverseGeocodeCoords(userCoords.lat, userCoords.lng);
+
+        const streetInput = document.getElementById("customerStreet");
+        const neighborhoodInput = document.getElementById("customerNeighborhood");
+        const numberInput = document.getElementById("customerNumber");
+        const cepInput = document.getElementById("customerCep");
+
+        // PREENCHIMENTO DIRETO E VISÍVEL DOS CAMPOS NO MODAL
+        if (streetInput) {
+          if (addressData.street) {
+            streetInput.value = addressData.street;
+          } else if (!streetInput.value.trim()) {
+            streetInput.value = "Localização obtida via GPS";
+          }
+          streetInput.classList.remove("input-gps-highlight");
+          void streetInput.offsetWidth; // Força repaint
+          streetInput.classList.add("input-gps-highlight");
+        }
+
+        if (neighborhoodInput) {
+          if (addressData.neighborhood) {
+            neighborhoodInput.value = addressData.neighborhood;
+          } else if (!neighborhoodInput.value.trim()) {
+            neighborhoodInput.value = "Belo Horizonte";
+          }
+          neighborhoodInput.classList.remove("input-gps-highlight");
+          void neighborhoodInput.offsetWidth;
+          neighborhoodInput.classList.add("input-gps-highlight");
+        }
+
+        if (cepInput && addressData.cep) {
+          cepInput.value = addressData.cep;
+          cepInput.classList.remove("input-gps-highlight");
+          void cepInput.offsetWidth;
+          cepInput.classList.add("input-gps-highlight");
+        }
+
+        if (numberInput) {
+          if (addressData.number) {
+            numberInput.value = addressData.number;
+          } else {
+            // Se o GPS não souber o número exato da residência, foca no campo número
+            setTimeout(() => {
+              numberInput.focus();
+            }, 300);
+          }
+        }
+
+        // Salvar os dados atualizados no LocalStorage
+        saveCustomerData();
+
+        // 2. Calcular rota de condução pelas vias de trânsito
         const distanceKm = await getDrivingDistanceKm(RESTAURANT_CONFIG.coordinates, userCoords);
         const tier = calculateDeliveryTier(distanceKm);
 
@@ -1357,23 +1489,7 @@ function handleGpsLocation() {
         AppState.deliveryTime = tier.time;
         AppState.deliveryExceedsMax = tier.exceedsMaxRadius;
 
-        // Tentar obter nome da rua/bairro via Reverse Geocoding
-        try {
-          const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userCoords.lat}&lon=${userCoords.lng}`;
-          const revRes = await fetch(revUrl, { headers: { "Accept-Language": "pt-BR" } });
-          if (revRes.ok) {
-            const revData = await revRes.json();
-            const addr = revData.address || {};
-            const streetInput = document.getElementById("customerStreet");
-            const neighborhoodInput = document.getElementById("customerNeighborhood");
-            if (streetInput && !streetInput.value.trim() && addr.road) streetInput.value = addr.road;
-            if (neighborhoodInput && !neighborhoodInput.value.trim() && (addr.suburb || addr.neighbourhood)) {
-              neighborhoodInput.value = addr.suburb || addr.neighbourhood;
-            }
-          }
-        } catch (e) {
-          // Ignora falha de reverse geocoding
-        }
+        const currentNeighborhood = (neighborhoodInput && neighborhoodInput.value.trim()) || addressData.neighborhood || "Sua Localização";
 
         if (tier.exceedsMaxRadius) {
           renderDeliveryCalcCard("warning", {
@@ -1386,23 +1502,47 @@ function handleGpsLocation() {
             distanceKm: tier.distanceKm,
             fee: tier.fee,
             time: tier.time,
-            neighborhood: document.getElementById("customerNeighborhood").value || "Sua Localização"
+            neighborhood: currentNeighborhood
           });
         }
 
         updateCartUI();
-        showToast(`GPS detectado! Distância: ${tier.distanceKm} km | Taxa: ${formatMoney(tier.fee)}`);
+
+        if (numberInput && !numberInput.value.trim()) {
+          showToast(`GPS detectado! Rua preenchida. Informe o número da residência.`);
+        } else {
+          showToast(`Endereço e taxa calculados pelo GPS: ${formatMoney(tier.fee)} (${tier.distanceKm} km)`);
+        }
       } catch (e) {
-        console.error("Erro ao calcular rota do GPS:", e);
-        renderDeliveryCalcCard("error", { message: "Erro ao calcular trajeto a partir do GPS." });
+        console.error("Erro ao processar GPS:", e);
+        renderDeliveryCalcCard("error", { message: "Erro ao traçar rota a partir do GPS." });
+      } finally {
+        if (btnGps) {
+          btnGps.classList.remove("loading");
+          btnGps.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+            </svg>
+            Usar meu GPS
+          `;
+        }
       }
     },
     (err) => {
       console.warn("Permissão de GPS negada ou indisponível:", err);
       showToast("Permissão de GPS não concedida. Preencha rua e bairro.", "info");
       renderDeliveryCalcCard("idle");
+      if (btnGps) {
+        btnGps.classList.remove("loading");
+        btnGps.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
+          Usar meu GPS
+        `;
+      }
     },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
   );
 }
 

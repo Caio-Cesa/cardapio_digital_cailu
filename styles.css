@@ -2622,3 +2622,36 @@ img {
   color: var(--text-dim);
   font-size: 0.74rem;
 }
+
+/* Feedback visual de preenchimento automático via GPS */
+.input-gps-highlight {
+  animation: gpsHighlight 1.8s ease-out forwards;
+}
+
+@keyframes gpsHighlight {
+  0% {
+    background-color: rgba(16, 185, 129, 0.28) !important;
+    border-color: var(--color-success) !important;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3) !important;
+  }
+  70% {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    border-color: var(--color-success) !important;
+  }
+  100% {
+    background-color: var(--bg-surface-elevated) !important;
+    border-color: var(--border-subtle) !important;
+    box-shadow: none !important;
+  }
+}
+
+.btn-gps-trigger.loading {
+  opacity: 0.75;
+  pointer-events: none;
+  animation: pulse-gps 1s infinite alternate;
+}
+
+@keyframes pulse-gps {
+  from { transform: scale(0.98); opacity: 0.7; }
+  to { transform: scale(1.02); opacity: 1; }
+}
