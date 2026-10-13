@@ -1297,6 +1297,39 @@ img {
   color: var(--text-dim);
 }
 
+.cart-item-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cart-item-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--color-primary);
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  line-height: 1.3;
+}
+
+.cart-item-edit-btn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.cart-item-edit-btn svg {
+  flex-shrink: 0;
+}
+
 .cart-item-right {
   display: flex;
   flex-direction: column;
@@ -2838,5 +2871,87 @@ img {
   font-weight: 600;
   color: var(--color-primary);
   text-align: center;
+}
+
+/* ==============================================================================
+   SELEÇÃO DE BURGER PARA ACRÉSCIMOS NO COMBO
+============================================================================== */
+.combo-burger-tabs-wrapper {
+  margin-bottom: 12px;
+}
+
+.combo-burger-tabs-label {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.combo-burger-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.combo-burger-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.combo-burger-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.combo-burger-tab-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.combo-burger-tab-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.combo-burger-tab-badge {
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-full);
+  padding: 1px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.combo-addons-summary-box {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-subtle);
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+.combo-addons-summary-title {
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 3px;
+  display: block;
 }
 

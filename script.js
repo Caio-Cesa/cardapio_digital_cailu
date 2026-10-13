@@ -18,7 +18,10 @@ const AppState = {
   selectedOptionType: null, // Ex: "Zero Açúcar" ou "Normal (Original)"
   selectedOptionSize: null,  // Ex: { id: "Lata 350ml", name: "Lata 350ml", price: 6.50 }
   selectedCustomGroupOptions: {}, // Ex: { "bebida_combo": optionObj }
-  selectedAddons: {},         // Ex: { "addon-bacon": 2, "addon-carne-120g": 1 } — total compartilhado (max MAX_ADDONS_TOTAL)
+  selectedAddons: {},         // Ex: { "addon-bacon": 2, "addon-carne-120g": 1 } — burgers individuais (max MAX_ADDONS_TOTAL)
+  selectedComboAddons: {},    // Ex: { 0: { "addon-bacon": 2 }, 1: { "addon-queijo": 1 } } — por burger do combo
+  activeComboBurgerIndex: 0,  // Índice do hambúrguer ativo na aba de acréscimos do combo (0 ou 1)
+  editingCartIndex: null,     // Índice do item do carrinho que está sendo editado (ou null)
   deliveryDistanceKm: null,
   deliveryFee: RESTAURANT_CONFIG.deliveryFee,
   deliveryTime: RESTAURANT_CONFIG.averageTime,
@@ -57,6 +60,26 @@ function formatMoney(value) {
     style: "currency",
     currency: "BRL"
   });
+}
+
+/**
+ * Retorna a informação da batata frita e tamanho inclusa no combo (se houver)
+ */
+function getComboFriesInfo(product) {
+  if (!product) return null;
+  if (product.fries) return product.fries;
+
+  const text = `${product.composition || ""} ${product.subtitle || ""} ${product.description || ""}`.toLowerCase();
+  if (text.includes("batata")) {
+    if (text.includes("grande")) {
+      return "Batata Frita Grande";
+    }
+    if (text.includes("pequena")) {
+      return "Batata Frita Pequena";
+    }
+    return "Batata Frita Inclusa";
+  }
+  return null;
 }
 
 /**
@@ -464,7 +487,9 @@ window.openProductModal = function (productId) {
 
   AppState.selectedProductForModal = prod;
   AppState.modalQuantity = 1;
-  AppState.selectedAddons = {}; // Limpa acréscimos anteriores
+  AppState.selectedAddons = {}; // Limpa acréscimos individuais
+  AppState.selectedComboAddons = {}; // Limpa acréscimos do combo
+  AppState.activeComboBurgerIndex = 0; // Reseta aba ativa para o 1º burger
 
   document.getElementById("modalProductTitle").textContent = prod.name;
   document.getElementById("modalProductDesc").textContent = prod.description;
@@ -606,6 +631,9 @@ window.openProductModal = function (productId) {
             card.classList.add("selected");
             AppState.selectedCustomGroupOptions[group.id] = opt;
             updateModalPrice();
+            if (prod.category === "promocoes") {
+              renderAddonsUI();
+            }
           });
 
           listEl.appendChild(card);
@@ -688,11 +716,13 @@ window.openProductModal = function (productId) {
     AppState.selectedOptionSize = null;
   }
 
-  // Seção de Acréscimos para Burgers Individuais (artesanais e smash)
+  // Seção de Acréscimos para Burgers Individuais ou Combos com Burgers
   const addonsContainer = document.getElementById("modalAddonsContainer");
   const isBurgerIndividual = prod.category === "artesanais" || prod.category === "smash";
+  const isCombo = prod.category === "promocoes" && (prod.hasAddons || (prod.comboBurgers && prod.comboBurgers.length > 0));
+
   if (addonsContainer) {
-    if (isBurgerIndividual && BURGER_ADDONS && BURGER_ADDONS.length > 0) {
+    if ((isBurgerIndividual || isCombo) && BURGER_ADDONS && BURGER_ADDONS.length > 0) {
       addonsContainer.style.display = "block";
       renderAddonsUI();
     } else {
@@ -714,6 +744,11 @@ function closeProductModal() {
   backdrop.classList.remove("active");
   backdrop.setAttribute("aria-hidden", "true");
   AppState.selectedProductForModal = null;
+  AppState.editingCartIndex = null;
+  const labelEl = document.getElementById("modalAddBtnLabel");
+  if (labelEl) {
+    labelEl.textContent = "Adicionar";
+  }
 }
 
 function updateModalPrice() {
@@ -731,8 +766,9 @@ function updateModalPrice() {
     });
   }
 
-  // Soma acréscimos selecionados (objeto { addonId: qty })
-  const addonsTotal = getAddonsTotalPrice();
+  // Soma acréscimos selecionados (individuais ou por burger no combo)
+  const isCombo = prod.category === "promocoes";
+  const addonsTotal = isCombo ? getComboAddonsTotalPrice() : getAddonsTotalPrice();
   const total = (unitPrice + addonsTotal) * AppState.modalQuantity;
 
   document.getElementById("modalQtyDisplay").textContent = AppState.modalQuantity;
@@ -745,7 +781,7 @@ function updateModalPrice() {
 }
 
 /**
- * Retorna o total em R$ de todos os acréscimos selecionados
+ * Retorna o total em R$ de todos os acréscimos de burger individual
  */
 function getAddonsTotalPrice() {
   let total = 0;
@@ -758,88 +794,266 @@ function getAddonsTotalPrice() {
 }
 
 /**
- * Retorna a quantidade total de acréscimos (soma de todas as quantidades)
+ * Retorna a quantidade total de acréscimos do burger individual
  */
 function getAddonsTotalCount() {
   return Object.values(AppState.selectedAddons).reduce((sum, qty) => sum + qty, 0);
 }
 
 /**
- * Renderiza a seção de acréscimos no modal com controles de quantidade por addon
+ * Retorna a lista de hambúrgueres que compõem o combo
  */
-function renderAddonsUI() {
-  const container = document.getElementById("modalAddonsContainer");
-  if (!container) return;
+function getComboBurgersList(prod) {
+  if (!prod || prod.category !== "promocoes") return [];
+  if (Array.isArray(prod.comboBurgers) && prod.comboBurgers.length > 0) {
+    return prod.comboBurgers.map((b, idx) => {
+      let displayName = b.name;
+      if (b.optionGroupId && AppState.selectedCustomGroupOptions[b.optionGroupId]) {
+        const chosen = AppState.selectedCustomGroupOptions[b.optionGroupId].name;
+        displayName = b.name ? `${b.name} (${chosen})` : chosen;
+      }
+      return {
+        id: b.id || `burger_${idx}`,
+        name: displayName || `Burger ${idx + 1}`
+      };
+    });
+  }
 
-  const totalCount = getAddonsTotalCount();
-  const atLimit = totalCount >= MAX_ADDONS_TOTAL;
+  if (prod.id === "combo-smash-economico") {
+    let smashName = "Burger Smash";
+    if (AppState.selectedCustomGroupOptions["smash_economico"]) {
+      smashName = `Burger Smash (${AppState.selectedCustomGroupOptions["smash_economico"].name})`;
+    }
+    return [{ id: "burger_1", name: smashName }];
+  }
 
-  container.innerHTML = `
-    <div class="addons-section-header">
-      <div class="addons-header-left">
-        <span class="addons-section-title">Acréscimos</span>
-        <span class="addons-section-hint">Opcional</span>
-      </div>
-      <div class="addons-counter-badge ${atLimit ? 'at-limit' : ''}" id="addonsCounterBadge">
-        <span id="addonsCounterText">${totalCount}/${MAX_ADDONS_TOTAL}</span>
-      </div>
-    </div>
-    <div class="addons-list" id="addonsList">
-      ${BURGER_ADDONS.map(addon => {
-    const qty = AppState.selectedAddons[addon.id] || 0;
-    const plusDisabled = atLimit && qty === 0 ? 'disabled' : (atLimit ? 'disabled' : '');
+  return [
+    { id: "burger_1", name: "1º Burger do Combo" },
+    { id: "burger_2", name: "2º Burger do Combo" }
+  ];
+}
+
+/**
+ * Retorna o total em R$ de todos os acréscimos selecionados no combo
+ */
+function getComboAddonsTotalPrice() {
+  let total = 0;
+  if (!AppState.selectedComboAddons) return 0;
+  for (const burgerAddons of Object.values(AppState.selectedComboAddons)) {
+    if (!burgerAddons) continue;
+    for (const [addonId, qty] of Object.entries(burgerAddons)) {
+      if (qty <= 0) continue;
+      const addonObj = BURGER_ADDONS.find(a => a.id === addonId);
+      if (addonObj) total += addonObj.price * qty;
+    }
+  }
+  return total;
+}
+
+/**
+ * Retorna a quantidade total de acréscimos de um burger específico do combo
+ */
+function getBurgerAddonsCount(burgerIndex) {
+  if (!AppState.selectedComboAddons || !AppState.selectedComboAddons[burgerIndex]) return 0;
+  return Object.values(AppState.selectedComboAddons[burgerIndex]).reduce((sum, qty) => sum + qty, 0);
+}
+
+/**
+ * Renderiza o HTML das linhas de acréscimo
+ */
+function renderAddonsListHtml(addonsObj, atLimit) {
+  return BURGER_ADDONS.map(addon => {
+    const qty = addonsObj[addon.id] || 0;
     const hasQty = qty > 0;
     return `
-          <div class="addon-row ${hasQty ? 'has-qty' : ''}" data-addon-id="${addon.id}">
-            <div class="addon-row-left">
-              <span class="addon-chip-icon">${addon.icon || '+'}</span>
-              <div class="addon-chip-info">
-                <span class="addon-chip-name">${addon.name}</span>
-                <span class="addon-chip-price">+ ${formatMoney(addon.price)} / un.</span>
-              </div>
-            </div>
-            <div class="addon-row-qty">
-              <button type="button" class="addon-qty-btn minus" data-addon-id="${addon.id}" ${qty === 0 ? 'disabled' : ''} aria-label="Remover ${addon.name}">−</button>
-              <span class="addon-qty-num">${qty}</span>
-              <button type="button" class="addon-qty-btn plus" data-addon-id="${addon.id}" ${atLimit ? 'disabled' : ''} aria-label="Adicionar ${addon.name}">+</button>
-            </div>
+      <div class="addon-row ${hasQty ? 'has-qty' : ''}" data-addon-id="${addon.id}">
+        <div class="addon-row-left">
+          <span class="addon-chip-icon">${addon.icon || '+'}</span>
+          <div class="addon-chip-info">
+            <span class="addon-chip-name">${addon.name}</span>
+            <span class="addon-chip-price">+ ${formatMoney(addon.price)} / un.</span>
           </div>
-        `;
-  }).join('')}
-    </div>
-    ${atLimit ? `<div class="addons-limit-notice">Limite de ${MAX_ADDONS_TOTAL} acréscimos atingido.</div>` : ''}
-  `;
+        </div>
+        <div class="addon-row-qty">
+          <button type="button" class="addon-qty-btn minus" data-addon-id="${addon.id}" ${qty === 0 ? 'disabled' : ''} aria-label="Remover ${addon.name}">−</button>
+          <span class="addon-qty-num">${qty}</span>
+          <button type="button" class="addon-qty-btn plus" data-addon-id="${addon.id}" ${atLimit ? 'disabled' : ''} aria-label="Adicionar ${addon.name}">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
-  // Listeners dos botões de quantidade
+/**
+ * Associa eventos de clique nos botões de quantidade de acréscimo
+ */
+function bindAddonButtons(container, targetAddonsObj, onUpdate) {
   container.querySelectorAll(".addon-qty-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const addonId = btn.dataset.addonId;
       const isMinus = btn.classList.contains("minus");
 
-      const currentQty = AppState.selectedAddons[addonId] || 0;
-      const currentTotal = getAddonsTotalCount();
+      const currentQty = targetAddonsObj[addonId] || 0;
+      const currentTotal = Object.values(targetAddonsObj).reduce((sum, q) => sum + q, 0);
 
       if (isMinus) {
         if (currentQty > 0) {
-          AppState.selectedAddons[addonId] = currentQty - 1;
-          if (AppState.selectedAddons[addonId] === 0) {
-            delete AppState.selectedAddons[addonId];
+          targetAddonsObj[addonId] = currentQty - 1;
+          if (targetAddonsObj[addonId] === 0) {
+            delete targetAddonsObj[addonId];
           }
         }
       } else {
         if (currentTotal < MAX_ADDONS_TOTAL) {
-          AppState.selectedAddons[addonId] = currentQty + 1;
+          targetAddonsObj[addonId] = currentQty + 1;
         } else {
           showToast(`Máximo de ${MAX_ADDONS_TOTAL} acréscimos por burger atingido.`, "info");
           return;
         }
       }
 
-      updateModalPrice();
-      renderAddonsUI(); // Rerenderiza para refletir novos estados de limite
+      if (onUpdate) onUpdate();
     });
   });
+}
+
+/**
+ * Renderiza a seção de acréscimos no modal (Burgers individuais ou Combos)
+ */
+function renderAddonsUI() {
+  const container = document.getElementById("modalAddonsContainer");
+  if (!container) return;
+
+  const prod = AppState.selectedProductForModal;
+  if (!prod) return;
+
+  const isCombo = prod.category === "promocoes";
+
+  if (!isCombo) {
+    // BURGER INDIVIDUAL
+    const totalCount = getAddonsTotalCount();
+    const atLimit = totalCount >= MAX_ADDONS_TOTAL;
+
+    container.innerHTML = `
+      <div class="addons-section-header">
+        <div class="addons-header-left">
+          <span class="addons-section-title">Acréscimos</span>
+          <span class="addons-section-hint">Opcional</span>
+        </div>
+        <div class="addons-counter-badge ${atLimit ? 'at-limit' : ''}" id="addonsCounterBadge">
+          <span id="addonsCounterText">${totalCount}/${MAX_ADDONS_TOTAL}</span>
+        </div>
+      </div>
+      <div class="addons-list" id="addonsList">
+        ${renderAddonsListHtml(AppState.selectedAddons, atLimit)}
+      </div>
+      ${atLimit ? `<div class="addons-limit-notice">Limite de ${MAX_ADDONS_TOTAL} acréscimos atingido.</div>` : ''}
+    `;
+
+    bindAddonButtons(container, AppState.selectedAddons, () => {
+      updateModalPrice();
+      renderAddonsUI();
+    });
+
+  } else {
+    // COMBO
+    const burgers = getComboBurgersList(prod);
+    const hasMultipleBurgers = burgers.length > 1;
+
+    if (AppState.activeComboBurgerIndex >= burgers.length) {
+      AppState.activeComboBurgerIndex = 0;
+    }
+    const currentBurgerIdx = AppState.activeComboBurgerIndex;
+    const currentBurger = burgers[currentBurgerIdx] || burgers[0];
+
+    if (!AppState.selectedComboAddons[currentBurgerIdx]) {
+      AppState.selectedComboAddons[currentBurgerIdx] = {};
+    }
+    const currentBurgerAddons = AppState.selectedComboAddons[currentBurgerIdx];
+    const currentCount = getBurgerAddonsCount(currentBurgerIdx);
+    const atLimit = currentCount >= MAX_ADDONS_TOTAL;
+
+    // Resumo dos acréscimos já adicionados em qualquer hambúrguer do combo
+    const summaryLines = [];
+    burgers.forEach((b, idx) => {
+      const bCount = getBurgerAddonsCount(idx);
+      if (bCount > 0) {
+        const items = Object.entries(AppState.selectedComboAddons[idx] || {})
+          .filter(([, q]) => q > 0)
+          .map(([aId, q]) => {
+            const a = BURGER_ADDONS.find(x => x.id === aId);
+            return `${q}x ${a ? a.name : aId}`;
+          });
+        summaryLines.push(`<strong>${b.name}:</strong> ${items.join(", ")}`);
+      }
+    });
+
+    let tabsHtml = "";
+    if (hasMultipleBurgers) {
+      tabsHtml = `
+        <div class="combo-burger-tabs-wrapper">
+          <span class="combo-burger-tabs-label">Selecione o burger para turbinar:</span>
+          <div class="combo-burger-tabs">
+            ${burgers.map((b, idx) => {
+              const bCount = getBurgerAddonsCount(idx);
+              const isActive = idx === currentBurgerIdx;
+              return `
+                <button type="button" class="combo-burger-tab-btn ${isActive ? 'active' : ''}" data-burger-idx="${idx}">
+                  <span>🍔 ${b.name}</span>
+                  ${bCount > 0 ? `<span class="combo-burger-tab-badge">+${bCount}</span>` : ''}
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = `
+      <div class="addons-section-header">
+        <div class="addons-header-left">
+          <span class="addons-section-title">Acréscimos ${hasMultipleBurgers ? `(${currentBurger.name})` : ''}</span>
+          <span class="addons-section-hint">Opcional</span>
+        </div>
+        <div class="addons-counter-badge ${atLimit ? 'at-limit' : ''}">
+          <span>${currentCount}/${MAX_ADDONS_TOTAL}</span>
+        </div>
+      </div>
+
+      ${tabsHtml}
+
+      <div class="addons-list">
+        ${renderAddonsListHtml(currentBurgerAddons, atLimit)}
+      </div>
+
+      ${atLimit ? `<div class="addons-limit-notice">Limite de ${MAX_ADDONS_TOTAL} acréscimos neste burger atingido.</div>` : ''}
+
+      ${summaryLines.length > 0 ? `
+        <div class="combo-addons-summary-box">
+          <span class="combo-addons-summary-title">Acréscimos selecionados no combo:</span>
+          ${summaryLines.map(line => `<div>• ${line}</div>`).join('')}
+        </div>
+      ` : ''}
+    `;
+
+    if (hasMultipleBurgers) {
+      container.querySelectorAll(".combo-burger-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.dataset.burgerIdx, 10);
+          if (!isNaN(idx)) {
+            AppState.activeComboBurgerIndex = idx;
+            renderAddonsUI();
+          }
+        });
+      });
+    }
+
+    bindAddonButtons(container, currentBurgerAddons, () => {
+      updateModalPrice();
+      renderAddonsUI();
+    });
+  }
 }
 
 // ==============================================================================
@@ -888,7 +1102,7 @@ window.updateItemQuantityById = function (productId, delta) {
 /**
  * Adiciona ao carrinho produto simples
  */
-function addToCart(product, quantity = 1, notes = "") {
+function addToCart(product, quantity = 1, notes = "", customization = null) {
   const existingIndex = AppState.cart.findIndex(i => i.id === product.id && i.notes === notes);
 
   if (existingIndex > -1) {
@@ -900,7 +1114,8 @@ function addToCart(product, quantity = 1, notes = "") {
       price: product.price,
       quantity: quantity,
       image: product.image,
-      notes: notes.trim()
+      notes: notes.trim(),
+      customization: customization || { notes: notes.trim() }
     });
   }
 
@@ -910,7 +1125,7 @@ function addToCart(product, quantity = 1, notes = "") {
 }
 
 /**
- * Adiciona ao carrinho produto customizado (Bebidas com Versão e Tamanho)
+ * Adiciona ao carrinho produto customizado (Bebidas com Versão e Tamanho, Combos, Burgers com Acréscimos)
  */
 function addCustomItemToCart(itemObj) {
   const existingIndex = AppState.cart.findIndex(i => i.id === itemObj.id && i.notes === itemObj.notes);
@@ -926,7 +1141,9 @@ function addCustomItemToCart(itemObj) {
       quantity: itemObj.quantity,
       image: itemObj.image,
       notes: itemObj.notes.trim(),
-      optionsSummary: itemObj.optionsSummary || []
+      optionsSummary: itemObj.optionsSummary || [],
+      fries: itemObj.fries || null,
+      customization: itemObj.customization || null
     });
   }
 
@@ -965,6 +1182,118 @@ window.removeCartItem = function (index) {
   updateCartUI();
   refreshCardButtons(originalId);
   showToast("Item removido da sacola", "info");
+};
+
+/**
+ * Abre o modal de produto pré-carregado para editar um item da sacola
+ */
+window.editCartItem = function (index) {
+  const item = AppState.cart[index];
+  if (!item) return;
+
+  const originalId = item.originalId || item.id.split("_")[0];
+  const prod = PRODUCTS.find(p => p.id === originalId || p.id === item.id);
+  if (!prod) {
+    showToast("Não foi possível carregar os detalhes deste produto para edição.", "error");
+    return;
+  }
+
+  // 1. Fecha o drawer da sacola para focar no modal de edição
+  const cartBackdrop = document.getElementById("cartModalBackdrop");
+  if (cartBackdrop) {
+    cartBackdrop.classList.remove("active");
+    cartBackdrop.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  // 2. Abre o modal do produto correspondente
+  openProductModal(prod.id);
+
+  // 3. Ativa o índice de edição
+  AppState.editingCartIndex = index;
+
+  // 4. Altera o texto do botão para indicar edição
+  const labelEl = document.getElementById("modalAddBtnLabel");
+  if (labelEl) {
+    labelEl.textContent = "Salvar Alterações";
+  }
+
+  // 5. Restaura quantidade e observações
+  AppState.modalQuantity = item.quantity || 1;
+  const notesInput = document.getElementById("modalProductNotes");
+  if (notesInput) {
+    notesInput.value = item.notes || "";
+  }
+
+  // 6. Restaura opções e acréscimos pré-selecionados
+  if (item.customization) {
+    // Opções de grupos estilo iFood (bebidas do combo, smashes, etc.)
+    if (item.customization.selectedGroupOptions) {
+      AppState.selectedCustomGroupOptions = { ...item.customization.selectedGroupOptions };
+      const groupsContainer = document.getElementById("modalCustomGroupsContainer");
+      if (groupsContainer) {
+        Object.entries(AppState.selectedCustomGroupOptions).forEach(([groupId, opt]) => {
+          const list = groupsContainer.querySelector(`[data-group-id="${groupId}"]`);
+          if (list) {
+            list.querySelectorAll(".ifood-option-card").forEach(card => {
+              card.classList.toggle("selected", card.dataset.optionId === opt.id);
+            });
+          }
+        });
+      }
+    }
+
+    // Acréscimos por burger no combo
+    if (item.customization.comboAddons) {
+      AppState.selectedComboAddons = JSON.parse(JSON.stringify(item.customization.comboAddons));
+    }
+
+    // Acréscimos em burger individual
+    if (item.customization.addons) {
+      AppState.selectedAddons = { ...item.customization.addons };
+    }
+
+    // Opções tradicionais (Bebidas individuais)
+    if (item.customization.optionType) {
+      AppState.selectedOptionType = item.customization.optionType;
+      const typeChips = document.getElementById("modalTypeChips");
+      if (typeChips) {
+        typeChips.querySelectorAll(".option-chip").forEach(c => {
+          c.classList.toggle("selected", c.dataset.optionType === item.customization.optionType);
+        });
+      }
+    }
+
+    if (item.customization.optionSize) {
+      AppState.selectedOptionSize = item.customization.optionSize;
+      const sizeChips = document.getElementById("modalSizeChips");
+      if (sizeChips) {
+        sizeChips.querySelectorAll(".option-chip").forEach(c => {
+          c.classList.toggle("selected", c.dataset.sizeId === item.customization.optionSize.id);
+        });
+      }
+    }
+
+  } else {
+    // Fallback para itens adicionados previamente
+    if (item.optionsSummary && item.optionsSummary.length > 0) {
+      if (prod.category === "artesanais" || prod.category === "smash") {
+        item.optionsSummary.forEach(sum => {
+          BURGER_ADDONS.forEach(a => {
+            if (sum.includes(a.name)) {
+              const match = sum.match(/^(\d+)x/);
+              const qty = match ? parseInt(match[1], 10) : 1;
+              AppState.selectedAddons[a.id] = qty;
+            }
+          });
+        });
+      }
+    }
+  }
+
+  // 7. Atualiza UI dos acréscimos e recalcula o preço exibido
+  renderAddonsUI();
+  updateModalPrice();
 };
 
 /**
@@ -1077,10 +1406,17 @@ function updateCartUI() {
       const itemSubtotal = item.price * item.quantity;
       const notesHtml = item.notes ? `<div class="cart-item-notes">Obs: ${item.notes}</div>` : "";
 
-      // Badges de opções customizadas (combos com optionGroups)
+      // Badges de opções customizadas (combos com optionGroups e batata)
       let optionsBadgesHtml = "";
-      if (item.optionsSummary && item.optionsSummary.length > 0) {
-        optionsBadgesHtml = `<div class="cart-item-options-list">${item.optionsSummary.map(s => `<span class="cart-item-option-badge">${s}</span>`).join("")}</div>`;
+      const baseProd = PRODUCTS.find(p => p.id === (item.originalId || item.id));
+      const friesInfo = item.fries || getComboFriesInfo(baseProd) || getComboFriesInfo(item);
+      const displaySummaries = item.optionsSummary ? [...item.optionsSummary] : [];
+      if (friesInfo && !displaySummaries.some(s => s.toLowerCase().includes("batata"))) {
+        displaySummaries.unshift(`Batata: ${friesInfo}`);
+      }
+
+      if (displaySummaries.length > 0) {
+        optionsBadgesHtml = `<div class="cart-item-options-list">${displaySummaries.map(s => `<span class="cart-item-option-badge">${s}</span>`).join("")}</div>`;
       }
 
       return `
@@ -1090,7 +1426,13 @@ function updateCartUI() {
             <h4 class="cart-item-title">${item.name}</h4>
             ${optionsBadgesHtml}
             ${notesHtml}
-            <span class="cart-item-price-each">${item.quantity}x ${formatMoney(item.price)}</span>
+            <div class="cart-item-actions-row">
+              <span class="cart-item-price-each">${item.quantity}x ${formatMoney(item.price)}</span>
+              <button type="button" class="cart-item-edit-btn" onclick="editCartItem(${index})" title="Editar personalização e opções deste item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Editar
+              </button>
+            </div>
           </div>
           <div class="cart-item-right">
             <strong class="cart-item-subtotal">${formatMoney(itemSubtotal)}</strong>
@@ -1838,6 +2180,15 @@ function finishOrderWhatsApp() {
   AppState.cart.forEach((item, idx) => {
     const itemTotal = item.price * item.quantity;
     message += `${idx + 1}. ${item.quantity}x ${stripEmojis(item.name)} - ${formatMoney(itemTotal)}\n`;
+
+    // Garante informação de batata do combo caso o item não a tenha no optionsSummary
+    const baseProd = PRODUCTS.find(p => p.id === (item.originalId || item.id));
+    const friesInfo = item.fries || getComboFriesInfo(baseProd) || getComboFriesInfo(item);
+    const mentionsFries = item.optionsSummary && item.optionsSummary.some(s => s.toLowerCase().includes("batata"));
+    if (friesInfo && !mentionsFries) {
+      message += `   - Batata: ${stripEmojis(friesInfo)}\n`;
+    }
+
     if (item.optionsSummary && item.optionsSummary.length > 0) {
       item.optionsSummary.forEach(summary => {
         message += `   - ${stripEmojis(summary)}\n`;
@@ -1997,12 +2348,19 @@ function setupEventListeners() {
     if (!prod) return;
 
     const notes = document.getElementById("modalProductNotes").value;
+    const isEditing = AppState.editingCartIndex != null && AppState.cart[AppState.editingCartIndex] != null;
 
     if (prod.hasOptions && prod.optionGroups && prod.optionGroups.length > 0) {
       // Combo com optionGroups estilo iFood
       const optionsSummary = [];
       let extraDelta = 0;
       let uniqueIdParts = [prod.id];
+
+      // Se o combo tiver batata inclusa, adiciona ao resumo
+      const comboFries = getComboFriesInfo(prod);
+      if (comboFries) {
+        optionsSummary.push(`Batata: ${comboFries}`);
+      }
 
       prod.optionGroups.forEach(group => {
         const selectedOpt = AppState.selectedCustomGroupOptions[group.id];
@@ -2015,10 +2373,39 @@ function setupEventListeners() {
         }
       });
 
-      const unitPrice = prod.price + extraDelta;
+      // Acréscimos por Burger no Combo
+      const comboBurgers = getComboBurgersList(prod);
+      let comboAddonsTotal = 0;
+      const comboAddonsSummary = [];
+
+      comboBurgers.forEach((b, idx) => {
+        const burgerAddons = AppState.selectedComboAddons[idx];
+        if (burgerAddons) {
+          const lines = [];
+          for (const [addonId, qty] of Object.entries(burgerAddons)) {
+            if (qty > 0) {
+              const a = BURGER_ADDONS.find(x => x.id === addonId);
+              if (a) {
+                comboAddonsTotal += a.price * qty;
+                lines.push(`${qty}x ${a.name}`);
+                uniqueIdParts.push(`b${idx}_${a.id}_${qty}`);
+              }
+            }
+          }
+          if (lines.length > 0) {
+            comboAddonsSummary.push(`Acréscimos no ${b.name}: ${lines.join(", ")}`);
+          }
+        }
+      });
+
+      if (comboAddonsSummary.length > 0) {
+        optionsSummary.push(...comboAddonsSummary);
+      }
+
+      const unitPrice = prod.price + extraDelta + comboAddonsTotal;
       const uniqueId = uniqueIdParts.join("_");
 
-      addCustomItemToCart({
+      const itemData = {
         id: uniqueId,
         originalId: prod.id,
         name: prod.name,
@@ -2026,10 +2413,36 @@ function setupEventListeners() {
         quantity: AppState.modalQuantity,
         image: prod.image,
         notes: notes,
-        optionsSummary: optionsSummary
-      });
+        optionsSummary: optionsSummary,
+        fries: comboFries,
+        customization: {
+          selectedGroupOptions: { ...AppState.selectedCustomGroupOptions },
+          comboAddons: JSON.parse(JSON.stringify(AppState.selectedComboAddons))
+        }
+      };
 
-      showToast(`Adicionado: ${prod.name}`);
+      if (isEditing) {
+        AppState.cart[AppState.editingCartIndex] = itemData;
+        AppState.editingCartIndex = null;
+        saveCart();
+        updateCartUI();
+        closeProductModal();
+        openCartDrawer();
+        showToast("Combo atualizado na sacola!");
+        return;
+      }
+
+      addCustomItemToCart(itemData);
+
+      const totalAddonsInCombo = Object.values(AppState.selectedComboAddons).reduce((sum, bObj) => {
+        return sum + Object.values(bObj || {}).reduce((s, q) => s + q, 0);
+      }, 0);
+
+      if (totalAddonsInCombo > 0) {
+        showToast(`Adicionado: ${prod.name} (+${totalAddonsInCombo} acréscimo(s))`);
+      } else {
+        showToast(`Adicionado: ${prod.name}`);
+      }
 
     } else if (prod.hasOptions) {
       // Produto com opções tradicionais (Bebidas individuais)
@@ -2041,17 +2454,34 @@ function setupEventListeners() {
       const unitPrice = AppState.selectedOptionSize ? AppState.selectedOptionSize.price : prod.price;
       const uniqueId = `${prod.id}_${AppState.selectedOptionType || "padrao"}_${AppState.selectedOptionSize ? AppState.selectedOptionSize.id : "padrao"}`;
 
-      addCustomItemToCart({
+      const itemData = {
         id: uniqueId,
         originalId: prod.id,
         name: customName,
         price: unitPrice,
         quantity: AppState.modalQuantity,
         image: prod.image,
-        notes: notes
-      });
+        notes: notes,
+        customization: {
+          optionType: AppState.selectedOptionType,
+          optionSize: AppState.selectedOptionSize
+        }
+      };
 
+      if (isEditing) {
+        AppState.cart[AppState.editingCartIndex] = itemData;
+        AppState.editingCartIndex = null;
+        saveCart();
+        updateCartUI();
+        closeProductModal();
+        openCartDrawer();
+        showToast("Item atualizado na sacola!");
+        return;
+      }
+
+      addCustomItemToCart(itemData);
       showToast(`Adicionado: ${customName}`);
+
     } else {
       // Produto normal (Burgers individuais com possíveis acréscimos)
       const addonsTotal = getAddonsTotalPrice();
@@ -2075,7 +2505,7 @@ function setupEventListeners() {
 
         const uniqueId = `${prod.id}_${addonsIdPart}_${notes ? 'n' + notes.length : 'n0'}`;
 
-        addCustomItemToCart({
+        const itemData = {
           id: uniqueId,
           originalId: prod.id,
           name: prod.name,
@@ -2083,11 +2513,48 @@ function setupEventListeners() {
           quantity: AppState.modalQuantity,
           image: prod.image,
           notes: notes,
-          optionsSummary: addonsSummary
-        });
+          optionsSummary: addonsSummary,
+          customization: {
+            addons: { ...AppState.selectedAddons }
+          }
+        };
+
+        if (isEditing) {
+          AppState.cart[AppState.editingCartIndex] = itemData;
+          AppState.editingCartIndex = null;
+          saveCart();
+          updateCartUI();
+          closeProductModal();
+          openCartDrawer();
+          showToast("Burger atualizado na sacola!");
+          return;
+        }
+
+        addCustomItemToCart(itemData);
         showToast(`Adicionado: ${prod.name} + ${totalAddonCount} acréscimo(s)`);
       } else {
-        addToCart(prod, AppState.modalQuantity, notes);
+        const itemData = {
+          id: prod.id,
+          name: prod.name,
+          price: prod.price,
+          quantity: AppState.modalQuantity,
+          image: prod.image,
+          notes: notes.trim(),
+          customization: { notes: notes.trim() }
+        };
+
+        if (isEditing) {
+          AppState.cart[AppState.editingCartIndex] = itemData;
+          AppState.editingCartIndex = null;
+          saveCart();
+          updateCartUI();
+          closeProductModal();
+          openCartDrawer();
+          showToast("Item atualizado na sacola!");
+          return;
+        }
+
+        addToCart(prod, AppState.modalQuantity, notes, { notes: notes.trim() });
         showToast(`Adicionado: ${prod.name}`);
       }
     }

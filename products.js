@@ -292,9 +292,15 @@ const PRODUCTS = [
     id: "combo-duplo",
     category: "promocoes",
     name: "Combo Duplo",
-    subtitle: "2x Cailu Love Duplo + 1x Batata Grande 300g + Bebida à sua escolha",
-    composition: "2x Cailu Love Duplo + 1x Batata Frita Grande 300g + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
-    description: "COMPOSIÇÃO: 2x Cailu Love Duplo + 1x Batata Frita Grande 300g + Bebida à sua escolha.\n\nA FOME TÁ GIGANTE POR AÍ? Para os casais ou amigos que não brincam em serviço quando o assunto é hambúrguer de verdade. São 4 blends de carne grelhados na chapa esperando por vocês!",
+    subtitle: "2x Cailu Love Duplo + 1x Batata Grande + Bebida à sua escolha",
+    composition: "2x Cailu Love Duplo + 1x Batata Frita Grande + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
+    fries: "Batata Frita Grande",
+    hasAddons: true,
+    comboBurgers: [
+      { id: "burger_1", name: "1º Cailu Love Duplo" },
+      { id: "burger_2", name: "2º Cailu Love Duplo" }
+    ],
+    description: "COMPOSIÇÃO: 2x Cailu Love Duplo + 1x Batata Frita Grande  + Bebida à sua escolha.\n\nA FOME TÁ GIGANTE POR AÍ? Para os casais ou amigos que não brincam em serviço quando o assunto é hambúrguer de verdade. São 4 blends de carne grelhados na chapa esperando por vocês!",
     price: 87.90,
     originalPrice: 107.70,
     image: "img/combo-duplo.jpeg",
@@ -315,9 +321,15 @@ const PRODUCTS = [
     id: "combo-misto",
     category: "promocoes",
     name: "Combo Misto",
-    subtitle: "Duplo & Tradicional + 1x Batata Grande 300g + Bebida à sua escolha",
-    composition: "1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande 300g + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
-    description: "COMPOSIÇÃO: 1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande 300g + Bebida à sua escolha.\n\nO COMBO PERFEITO NÃO EXIS... PERA, EXISTE SIM! Aquele empasse clássico: um quer um burger monstro e o outro quer um clássico perfeito? O Combo Misto resolve a indecisão do casal com o melhor dos dois mundos.",
+    subtitle: "Duplo & Tradicional + 1x Batata Grande + Bebida à sua escolha",
+    composition: "1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
+    fries: "Batata Frita Grande",
+    hasAddons: true,
+    comboBurgers: [
+      { id: "burger_1", name: "Cailu Love Duplo" },
+      { id: "burger_2", name: "Cailu Tradicional" }
+    ],
+    description: "COMPOSIÇÃO: 1x Cailu Love Duplo + 1x Cailu Tradicional + 1x Batata Frita Grande + Bebida à sua escolha.\n\nO COMBO PERFEITO NÃO EXIS... PERA, EXISTE SIM! Aquele empasse clássico: um quer um burger monstro e o outro quer um clássico perfeito? O Combo Misto resolve a indecisão do casal com o melhor dos dois mundos.",
     price: 74.90,
     originalPrice: 94.70,
     image: "img/combo-misto.jpeg",
@@ -340,6 +352,12 @@ const PRODUCTS = [
     name: "Combo Mix Premium",
     subtitle: "Bacon Love & Cailu Crispy + 1x Batata Grande + Bebida à sua escolha",
     composition: "1x Bacon Love + 1x Cailu Crispy + 1x Batata Frita Grande + Bebida à sua escolha (Coca 600ml ou Guaraná 1L).",
+    fries: "Batata Frita Grande",
+    hasAddons: true,
+    comboBurgers: [
+      { id: "burger_1", name: "Bacon Love" },
+      { id: "burger_2", name: "Cailu Crispy" }
+    ],
     description: "COMPOSIÇÃO: 1x Bacon Love + 1x Cailu Crispy + 1x Batata Frita Grande + Bebida à sua escolha.\n\nSESSÃO PREMIUM NA CAILU BURGER! Se você ama texturas marcantes, a crocância perfeita do bacon e cebola crispy, esse combo foi feito sob medida para a sua noite.",
     price: 74.90,
     originalPrice: 95.70,
@@ -363,6 +381,12 @@ const PRODUCTS = [
     name: "Combo Smash Prime - 80g",
     subtitle: "2x Burgers Smash + 1x Batata Grande + Bebida à sua escolha",
     composition: "02 Burgers Smash à sua escolha (Clássico, Bacon Melt ou Crispy!) + 1x Batata Frita Grande + Bebida à sua escolha.",
+    fries: "Batata Frita Grande",
+    hasAddons: true,
+    comboBurgers: [
+      { id: "burger_1", name: "1º Burger Smash", optionGroupId: "smash_1" },
+      { id: "burger_2", name: "2º Burger Smash", optionGroupId: "smash_2" }
+    ],
     description: "COMPOSIÇÃO: 02 Burgers Smash à sua escolha (Clássico, Bacon Melt ou Crispy!) + 1x Batata Frita Grande + Bebida à sua escolha.\n\nA DUPLA DINÂMICA DOS SMASHES! Aquela combinação perfeita que só a nossa chapa sabe fazer. Monte o combo do seu jeito escolhendo os seus dois Smashes favoritos de 80g!",
     price: 57.90,
     originalPrice: 71.90,
@@ -400,6 +424,11 @@ const PRODUCTS = [
     name: "Combo Smash Econômico (O Queridinho do Bolso!)",
     subtitle: "1x Burger Smash + 1x Batata Pequena + 1x Refrigerante 200ml",
     composition: "1x Burger Smash à escolha + 1x Batata Frita Pequena + 1x Refrigerante 200ml à escolha.",
+    fries: "Batata Frita Pequena",
+    hasAddons: true,
+    comboBurgers: [
+      { id: "burger_1", name: "Burger Smash", optionGroupId: "smash_economico" }
+    ],
     description: "COMPOSIÇÃO: 1x Burger Smash à escolha + 1x Batata Frita Pequena + 1x Refrigerante 200ml à escolha.\n\nBateu aquela vontade de Cailu Burger mas a grana tá curta? Criamos o combo perfeito para salvar a sua noite sem pesar no bolso. O sabor incomparável do nosso Smash de 80g com um preço imbatível!",
     price: 27.90,
     originalPrice: 32.90,
