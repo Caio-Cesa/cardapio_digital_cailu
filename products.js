@@ -682,5 +682,16 @@ const PRODUCTS = [
       { id: "Pequena", name: "Pequena (5 uni)", price: 28.90, default: true },
       { id: "Grande", name: "Grande (10 uni)", price: 49.90 }
     ]
+  },
+  {
+    id: "batata-supreme",
+    category: "acompanhamentos",
+    name: "Batata Supreme",
+    subtitle: "Batata na caixa",
+    description: "Para quem busca sabor e crocância! 450g de batatas palito(in natura), douradas e sequinhas, cobertas por muuuuito cheddar cremoso e nossa irresistível farofa de bacon artesanal. O clássico que todo mundo ama, elevado a um novo nível de sabor.",
+    price: 30.00,
+    image: "img/batata-porcao.jpeg",
+    badge: "Super Crocante",
+    serves: "Porção"
   }
 ];

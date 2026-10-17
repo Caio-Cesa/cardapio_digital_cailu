@@ -77,7 +77,7 @@ function getComboFriesInfo(product) {
     if (text.includes("pequena")) {
       return "Batata Frita Pequena";
     }
-    return "Batata Frita Inclusa";
+    //return "Batata Frita Inclusa";
   }
   return null;
 }
@@ -540,9 +540,9 @@ window.openProductModal = function (productId) {
       } else if (prod.id === "combo-smash-economico") {
         notesInput.placeholder = "Ex: Smash Bacon Melt, Coca 200ml bem geladinha...";
       } else if (prod.category === "promocoes") {
-        notesInput.placeholder = "Ex: Sabores dos refrigerantes lata, ponto dos burgers...";
+        notesInput.placeholder = "Ex: Sem alface, sem sachê de molho...";
       } else {
-        notesInput.placeholder = "Ex: Carne ao ponto, sem picles, molho grill à parte...";
+        notesInput.placeholder = "Ex: Sem sachê de molho...";
       }
     }
   }
@@ -859,6 +859,226 @@ function getBurgerAddonsCount(burgerIndex) {
 }
 
 /**
+ * Organiza as opções de um combo na ordem estruturada solicitada:
+ * 1. 1º Hambúrguer
+ *    -- Acréscimo 1
+ *    -- Acréscimo 2
+ * 2. 2º Hambúrguer (se houver)
+ *    -- Acréscimo 1
+ *    -- Acréscimo 2
+ * 3. Batata se houver
+ * 4. Por último o refrigerante / bebida
+ */
+function getOrganizedComboSummaries(item, friesInfo, baseProd) {
+  const rawList = Array.isArray(item.optionsSummary) ? [...item.optionsSummary] : [];
+
+  // Se tiver batata informada e não estiver na lista, inclui
+  if (friesInfo && !rawList.some(s => s.toLowerCase().includes("batata"))) {
+    rawList.push(`Batata: ${friesInfo}`);
+  }
+
+  if (rawList.length === 0) return [];
+
+  const burger1 = { header: null, addons: [] };
+  const burger2 = { header: null, addons: [] };
+  const fries = [];
+  const drinks = [];
+  const uncategorized = [];
+
+  rawList.forEach(line => {
+    const l = line.toLowerCase();
+
+    // 1. Bebidas / Refrigerantes -> Sempre por último
+    if (
+      l.includes("bebida") ||
+      l.includes("refrigerante") ||
+      l.includes("refri") ||
+      l.includes("coca") ||
+      l.includes("guaraná") ||
+      l.includes("guarana") ||
+      l.includes("pepsi") ||
+      l.includes("fanta") ||
+      l.includes("suco") ||
+      l.includes("água") ||
+      l.includes("agua")
+    ) {
+      drinks.push(line);
+      return;
+    }
+
+    // 2. Batata -> Penúltimo (logo antes da bebida)
+    if (l.includes("batata")) {
+      fries.push(line);
+      return;
+    }
+
+    // Helper para verificar se a linha pertence ao 2º Burger
+    const checkIsBurger2 = text => {
+      return (
+        text.includes("2º") ||
+        text.includes("2o") ||
+        text.includes("2ª") ||
+        text.includes("segundo") ||
+        text.includes("smash 2") ||
+        text.includes("smash_2") ||
+        (baseProd && baseProd.comboBurgers && baseProd.comboBurgers[1] && text.includes(baseProd.comboBurgers[1].name.toLowerCase()))
+      );
+    };
+
+    // Helper para verificar se a linha pertence ao 1º Burger (exclui explicitamente o 2º)
+    const checkIsBurger1 = text => {
+      if (checkIsBurger2(text)) return false;
+      return (
+        text.includes("1º") ||
+        text.includes("1o") ||
+        text.includes("1ª") ||
+        text.includes("primeiro") ||
+        text.includes("smash 1") ||
+        text.includes("smash_1") ||
+        text.includes("escolha seu burger") ||
+        text.includes("burger smash") ||
+        (baseProd && baseProd.comboBurgers && baseProd.comboBurgers[0] && text.includes(baseProd.comboBurgers[0].name.toLowerCase()))
+      );
+    };
+
+    // 3. Acréscimos (linha de grupo tipo "Acréscimos no 1º Burger Smash (...): 1x Carne, 1x Bacon")
+    const isAddonGroup =
+      l.startsWith("acréscimo") ||
+      l.startsWith("acrescimo") ||
+      l.includes("acréscimo no ") ||
+      l.includes("acrescimo no ") ||
+      l.includes("acréscimos no ") ||
+      l.includes("acrescimos no ");
+
+    const isSubAddon = line.startsWith("--");
+
+    if (isAddonGroup) {
+      const colonIdx = line.indexOf(":");
+      let burgerLabel = "";
+      let itemsStr = line;
+      if (colonIdx !== -1) {
+        burgerLabel = line.slice(0, colonIdx).toLowerCase();
+        itemsStr = line.slice(colonIdx + 1).trim();
+      }
+      const individualAddons = itemsStr
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(s => s.startsWith("--") ? s : `-- ${s}`);
+
+      if (checkIsBurger2(burgerLabel)) {
+        if (!burger2.header && baseProd && baseProd.comboBurgers && baseProd.comboBurgers[1] && burgerLabel.includes(baseProd.comboBurgers[1].name.toLowerCase())) {
+          burger2.header = baseProd.comboBurgers[1].name;
+        }
+        burger2.addons.push(...individualAddons);
+      } else if (checkIsBurger1(burgerLabel)) {
+        if (!burger1.header && baseProd && baseProd.comboBurgers && baseProd.comboBurgers[0] && burgerLabel.includes(baseProd.comboBurgers[0].name.toLowerCase())) {
+          burger1.header = baseProd.comboBurgers[0].name;
+        }
+        burger1.addons.push(...individualAddons);
+      } else {
+        burger1.addons.push(...individualAddons);
+      }
+      return;
+    }
+
+    if (isSubAddon) {
+      if (burger2.header) {
+        burger2.addons.push(line);
+      } else {
+        burger1.addons.push(line);
+      }
+      return;
+    }
+
+    // 4. Opção / Escolha do Hambúrguer
+    if (checkIsBurger2(l)) {
+      burger2.header = line;
+      return;
+    }
+
+    if (checkIsBurger1(l)) {
+      burger1.header = line;
+      return;
+    }
+
+    uncategorized.push(line);
+  });
+
+  const result = [];
+
+  // 1. 1º Hambúrguer e seus respectivos acréscimos logo abaixo
+  if (burger1.header) result.push(burger1.header);
+  result.push(...burger1.addons);
+
+  // 2. 2º Hambúrguer e seus respectivos acréscimos logo abaixo
+  if (burger2.header) result.push(burger2.header);
+  result.push(...burger2.addons);
+
+  // 3. Quaisquer outros itens não categorizados
+  result.push(...uncategorized);
+
+  // 4. Batata
+  result.push(...fries);
+
+  // 5. Bebida
+  result.push(...drinks);
+
+  return result;
+}
+
+/**
+ * Verifica se uma linha de resumo do combo se refere a um hambúrguer (e não batata, bebida ou acréscimo)
+ */
+function isComboBurgerLine(line, baseProd) {
+  const l = (line || "").toLowerCase();
+  if (
+    l.startsWith("--") ||
+    l.includes("batata") ||
+    l.includes("bebida") ||
+    l.includes("refrigerante") ||
+    l.includes("refri") ||
+    l.includes("coca") ||
+    l.includes("guaraná") ||
+    l.includes("guarana") ||
+    l.includes("fanta") ||
+    l.includes("suco") ||
+    l.includes("água") ||
+    l.includes("agua") ||
+    l.includes("pepsi")
+  ) {
+    return false;
+  }
+  if (l.includes("burger") || l.includes("smash")) return true;
+  if (baseProd && Array.isArray(baseProd.comboBurgers)) {
+    if (baseProd.comboBurgers.some(b => b.name && l.includes(b.name.toLowerCase()))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Formata o nome do burger dentro da linha em caixa alta e negrito para o WhatsApp
+ * Exemplo: "Escolha o 1º Burger Smash: Smash Clássico Irresistível"
+ *       -> "Escolha o 1º Burger Smash: *SMASH CLÁSSICO IRRESISTÍVEL*"
+ * Exemplo: "1º Cailu Love Duplo"
+ *       -> "*1º CAILU LOVE DUPLO*"
+ */
+function formatBurgerNameBoldUpper(line) {
+  if (!line) return "";
+  const colonIdx = line.indexOf(":");
+  if (colonIdx !== -1) {
+    const label = line.slice(0, colonIdx).trim();
+    let burgerName = line.slice(colonIdx + 1).trim();
+    burgerName = burgerName.replace(/^\*+|\*+$/g, "").trim();
+    return `${label}: *${burgerName.toUpperCase()}*`;
+  }
+  const clean = line.replace(/^\*+|\*+$/g, "").trim();
+  return `*${clean.toUpperCase()}*`;
+}
+
+/**
  * Renderiza o HTML das linhas de acréscimo
  */
 function renderAddonsListHtml(addonsObj, atLimit) {
@@ -996,15 +1216,15 @@ function renderAddonsUI() {
           <span class="combo-burger-tabs-label">Selecione o burger para turbinar:</span>
           <div class="combo-burger-tabs">
             ${burgers.map((b, idx) => {
-              const bCount = getBurgerAddonsCount(idx);
-              const isActive = idx === currentBurgerIdx;
-              return `
+        const bCount = getBurgerAddonsCount(idx);
+        const isActive = idx === currentBurgerIdx;
+        return `
                 <button type="button" class="combo-burger-tab-btn ${isActive ? 'active' : ''}" data-burger-idx="${idx}">
                   <span>🍔 ${b.name}</span>
                   ${bCount > 0 ? `<span class="combo-burger-tab-badge">+${bCount}</span>` : ''}
                 </button>
               `;
-            }).join('')}
+      }).join('')}
           </div>
         </div>
       `;
@@ -1409,14 +1629,17 @@ function updateCartUI() {
       // Badges de opções customizadas (combos com optionGroups e batata)
       let optionsBadgesHtml = "";
       const baseProd = PRODUCTS.find(p => p.id === (item.originalId || item.id));
+      const isCombo = (baseProd && baseProd.category === "promocoes") || (item.category === "promocoes") || (item.name && item.name.toLowerCase().includes("combo"));
       const friesInfo = item.fries || getComboFriesInfo(baseProd) || getComboFriesInfo(item);
-      const displaySummaries = item.optionsSummary ? [...item.optionsSummary] : [];
-      if (friesInfo && !displaySummaries.some(s => s.toLowerCase().includes("batata"))) {
-        displaySummaries.unshift(`Batata: ${friesInfo}`);
-      }
+      const displaySummaries = isCombo
+        ? getOrganizedComboSummaries(item, friesInfo, baseProd)
+        : (item.optionsSummary ? [...item.optionsSummary] : []);
 
       if (displaySummaries.length > 0) {
-        optionsBadgesHtml = `<div class="cart-item-options-list">${displaySummaries.map(s => `<span class="cart-item-option-badge">${s}</span>`).join("")}</div>`;
+        optionsBadgesHtml = `<div class="cart-item-options-list">${displaySummaries.map(s => {
+          const isSub = s.startsWith("--");
+          return `<span class="cart-item-option-badge ${isSub ? 'is-sub-addon' : ''}">${s}</span>`;
+        }).join("")}</div>`;
       }
 
       return `
@@ -2179,26 +2402,39 @@ function finishOrderWhatsApp() {
   message += `*ITENS DO PEDIDO:*\n`;
   AppState.cart.forEach((item, idx) => {
     const itemTotal = item.price * item.quantity;
-    message += `${idx + 1}. ${item.quantity}x ${stripEmojis(item.name)} - ${formatMoney(itemTotal)}\n`;
+    const cleanItemName = stripEmojis(item.name).toUpperCase();
+    message += `${idx + 1}. *${item.quantity}x ${cleanItemName}* - ${formatMoney(itemTotal)}\n`;
 
-    // Garante informação de batata do combo caso o item não a tenha no optionsSummary
     const baseProd = PRODUCTS.find(p => p.id === (item.originalId || item.id));
-    const friesInfo = item.fries || getComboFriesInfo(baseProd) || getComboFriesInfo(item);
-    const mentionsFries = item.optionsSummary && item.optionsSummary.some(s => s.toLowerCase().includes("batata"));
-    if (friesInfo && !mentionsFries) {
-      message += `   - Batata: ${stripEmojis(friesInfo)}\n`;
-    }
+    const isCombo = (baseProd && baseProd.category === "promocoes") || (item.category === "promocoes") || (item.name && item.name.toLowerCase().includes("combo"));
 
-    if (item.optionsSummary && item.optionsSummary.length > 0) {
-      item.optionsSummary.forEach(summary => {
-        message += `   - ${stripEmojis(summary)}\n`;
+    if (isCombo) {
+      const friesInfo = item.fries || getComboFriesInfo(baseProd) || getComboFriesInfo(item);
+      const organizedSummaries = getOrganizedComboSummaries(item, friesInfo, baseProd);
+      organizedSummaries.forEach(summary => {
+        if (summary.startsWith("--")) {
+          message += `   ${stripEmojis(summary)}\n`;
+        } else {
+          let lineText = stripEmojis(summary);
+          if (isComboBurgerLine(lineText, baseProd)) {
+            lineText = formatBurgerNameBoldUpper(lineText);
+          }
+          message += `   - ${lineText}\n`;
+        }
       });
+    } else {
+      if (item.optionsSummary && item.optionsSummary.length > 0) {
+        item.optionsSummary.forEach(summary => {
+          message += `   - ${stripEmojis(summary)}\n`;
+        });
+      }
     }
     if (item.notes) {
       message += `   Obs: ${stripEmojis(item.notes)}\n`;
     }
+
+    message += `\n`;
   });
-  message += `\n`;
 
   message += `*TOTAL DO PEDIDO:*\n`;
   message += `- Subtotal dos itens: ${formatMoney(subtotal)}\n`;
@@ -2402,6 +2638,8 @@ function setupEventListeners() {
         optionsSummary.push(...comboAddonsSummary);
       }
 
+      const organizedOptionsSummary = getOrganizedComboSummaries({ optionsSummary }, comboFries, prod);
+
       const unitPrice = prod.price + extraDelta + comboAddonsTotal;
       const uniqueId = uniqueIdParts.join("_");
 
@@ -2413,7 +2651,7 @@ function setupEventListeners() {
         quantity: AppState.modalQuantity,
         image: prod.image,
         notes: notes,
-        optionsSummary: optionsSummary,
+        optionsSummary: organizedOptionsSummary,
         fries: comboFries,
         customization: {
           selectedGroupOptions: { ...AppState.selectedCustomGroupOptions },
