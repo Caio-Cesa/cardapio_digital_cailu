@@ -259,6 +259,15 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a.meta-location:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .meta-separator {
@@ -2657,6 +2666,17 @@ img {
 
 .footer-details strong {
   color: var(--text-main);
+}
+
+.footer-link-highlight {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer-link-highlight:hover {
+  color: #fcd34d;
+  text-decoration: underline;
 }
 
 .footer-copy {

@@ -50,6 +50,7 @@ const RESTAURANT_CONFIG = {
   },
   instagram: "@cailuburger",
   instagramUrl: "https://www.instagram.com/cailuburger/",
+  googleMapsUrl: "https://share.google/AoaUIY2q5M1a7s9Ge",
   pixKey: "64875012000142",
   pixBeneficiary: "CNPJ / Luana Fátima"
 };
