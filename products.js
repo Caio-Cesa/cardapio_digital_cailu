@@ -129,7 +129,7 @@ const BURGER_ADDONS = [
   { id: "addon-bacon", name: "Bacon Crocante", price: 3.90, icon: "🥓", description: "Fatias crocantes e sequinhas" },
   { id: "addon-cheddar", name: "Cheddar Cremoso", price: 5.00, icon: "🧀", description: "Cheddar cremoso derretido" },
   { id: "addon-queijo", name: "Queijo Prato Derretido", price: 3.00, icon: "🧀", description: "Fatia generosa derretida" },
-  { id: "addon-cebola-caramelizada", name: "Cebola Caramelizada", price: 8.90, icon: "🧅", description: "Caramelizada na chapa" },
+  { id: "addon-cebola-caramelizada", name: "Cebola Caramelizada", price: 3.90, icon: "🧅", description: "Caramelizada na chapa" },
   { id: "addon-aneis-cebola", name: "Anéis de Cebola Empanada", price: 3.90, icon: "🧅", description: "Crocantes e dourados" }
 ];
 
@@ -255,7 +255,7 @@ const SMASH_BURGER_OPTIONS_2 = [
 ];
 
 const SMASH_ECONOMICO_DRINK_OPTIONS = [
-  {
+  /*{
     id: "coca-200-normal",
     name: "Coca-Cola Pet 200ml (Normal)",
     description: "Garrafinha 200ml estupidamente gelada",
@@ -269,7 +269,7 @@ const SMASH_ECONOMICO_DRINK_OPTIONS = [
     description: "Garrafinha 200ml zero açúcar bem gelada",
     image: "img/logo-coca-cola.jpg",
     priceDelta: 0
-  },
+  },*/
   {
     id: "guarana-200",
     name: "Guaraná Antarctica Pet 200ml",
@@ -581,8 +581,8 @@ const PRODUCTS = [
       { id: "Zero Açúcar", name: "Zero Açúcar" }
     ],
     sizes: [
-      { id: "Pet 200ml", name: "Pet 200ml", price: 4.00, default: true },
-      { id: "Lata 350ml", name: "Lata 350ml", price: 8.00 },
+      //{ id: "Pet 200ml", name: "Pet 200ml", price: 4.00, default: true },
+      { id: "Lata 350ml", name: "Lata 350ml", price: 8.00, default: true },
       { id: "Garrafa 600ml", name: "Garrafa 600ml", price: 10.00 }
     ]
   },
@@ -621,7 +621,7 @@ const PRODUCTS = [
     hasOptions: true,
     optionTypeLabel: "Versão da Pepsi",
     types: [
-      { id: "Normal", name: "Normal (Original)" },
+      //{ id: "Normal", name: "Normal (Original)" },
       { id: "Black / Zero", name: "Black / Zero" }
     ],
     sizes: [
