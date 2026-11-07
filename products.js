@@ -128,7 +128,7 @@ const BURGER_ADDONS = [
   { id: "addon-carne-120g", name: "Carne 120g (Blend Artesanal)", price: 9.90, icon: "🥩", description: "Blend bovino 120g grelhado no ponto" },
   { id: "addon-bacon", name: "Bacon Crocante", price: 3.90, icon: "🥓", description: "Fatias crocantes e sequinhas" },
   { id: "addon-cheddar", name: "Cheddar Cremoso", price: 5.00, icon: "🧀", description: "Cheddar cremoso derretido" },
-  { id: "addon-queijo", name: "Queijo Prato Derretido", price: 3.00, icon: "🧀", description: "Fatia generosa derretida" },
+  { id: "addon-queijo", name: "Queijo Derretido", price: 3.00, icon: "🧀", description: "Fatia generosa derretida" },
   { id: "addon-cebola-caramelizada", name: "Cebola Caramelizada", price: 3.90, icon: "🧅", description: "Caramelizada na chapa" },
   { id: "addon-aneis-cebola", name: "Anéis de Cebola Empanada", price: 3.90, icon: "🧅", description: "Crocantes e dourados" }
 ];
@@ -194,7 +194,7 @@ const SMASH_BURGER_OPTIONS_1 = [
   {
     id: "smash-classico-1",
     name: "Smash Clássico Irresistível",
-    description: "Smash, queijo prato derretido, alface, tomate e molho grill",
+    description: "Smash, queijo derretido, alface, tomate e molho grill",
     image: "img/smash-classico-irresistivel.jpeg",
     priceDelta: 0,
     default: true
@@ -216,7 +216,7 @@ const SMASH_BURGER_OPTIONS_1 = [
   {
     id: "smash-cebola-caramelizada-1",
     name: "Smash Cebola Caramelizada",
-    description: "Smash, queijo prato, cebola caramelizada e molho grill",
+    description: "Smash, queijo, cebola caramelizada e molho grill",
     image: "img/smash-cebola-caramelizada.jpeg",
     priceDelta: 0
   }
@@ -226,7 +226,7 @@ const SMASH_BURGER_OPTIONS_2 = [
   {
     id: "smash-classico-2",
     name: "Smash Clássico Irresistível",
-    description: "Smash, queijo prato derretido, alface, tomate e molho grill",
+    description: "Smash, queijo derretido, alface, tomate e molho grill",
     image: "img/smash-classico-irresistivel.jpeg",
     priceDelta: 0
   },
@@ -248,7 +248,7 @@ const SMASH_BURGER_OPTIONS_2 = [
   {
     id: "smash-cebola-caramelizada-2",
     name: "Smash Cebola Caramelizada",
-    description: "Smash, queijo prato, cebola caramelizada e molho grill",
+    description: "Smash, queijo, cebola caramelizada e molho grill",
     image: "img/smash-cebola-caramelizada.jpeg",
     priceDelta: 0
   }
@@ -455,13 +455,13 @@ const PRODUCTS = [
     ]
   },
 
-  // --- BURGERS ARTESANAIS (BLENDS EXCLUSIVOS NA BRASA) ---
+  // --- BURGERS ARTESANAIS ---
   {
     id: "cailu-tradicional",
     category: "artesanais",
     name: "Cailu Tradicional",
-    subtitle: "Blend 120g na brasa, queijo prato, bacon e brioche",
-    description: "A essência do verdadeiro burger artesanal. Um suculento blend de 120g (in natura) grelhado no ponto, coberto com queijo prato derretido e fatias de bacon crocante. Para trazer o frescor ideal, finalizamos com alface americana selecionada, tudo isso abraçado pelo delicioso molho grill e um pão brioche macio e amanteigado. O clássico que nunca decepciona!",
+    subtitle: "Blend 120g, bacon e queijo",
+    description: "A essência do verdadeiro burger artesanal. Um suculento blend de 120g (in natura) grelhado no ponto, coberto com queijo derretido e fatias de bacon crocante. Para trazer o frescor ideal, finalizamos com alface americana selecionada, tudo isso abraçado pelo delicioso molho grill e um pão brioche macio e amanteigado. O clássico que nunca decepciona!",
     price: 24.90,
     image: "img/cailu-tradicional.jpeg",
     badge: "O Clássico",
@@ -473,8 +473,8 @@ const PRODUCTS = [
     id: "cailu-bacon-love",
     category: "artesanais",
     name: "Cailu Bacon Love",
-    subtitle: "Blend 120g, mix de queijos e bacon caramelizado exclusivo",
-    description: "Prepare-se para uma explosão de sabores! Imagine um burger de 120g (in natura) grelhado no ponto, abraçado por um mix de queijo prato e cheddar cremoso. Agora adicione o toque exclusivo do nosso bacon caramelizado, que traz aquele sabor defumado e levemente adocicado. Tudo isso no pão brioche que derrete na boca, com o frescor da alface americana e o nosso saboroso molho grill. É impossível comer um só!",
+    subtitle: "Blend 120g, bacon caramelizado e cheddar",
+    description: "Prepare-se para uma explosão de sabores! Imagine um burger de 120g (in natura) grelhado no ponto, abraçado por um mix de queijo e cheddar cremoso. Agora adicione o toque exclusivo do nosso bacon caramelizado, que traz aquele sabor defumado e levemente adocicado. Tudo isso no pão brioche que derrete na boca, com o frescor da alface americana e o nosso saboroso molho grill. É impossível comer um só!",
     price: 28.90,
     image: "img/cailu-bacon-love.jpeg",
     badge: "Mais Pedido",
@@ -486,8 +486,8 @@ const PRODUCTS = [
     id: "cailu-crispy",
     category: "artesanais",
     name: "Cailu Crispy",
-    subtitle: "Blend 120g, cheddar, bacon e cebolas empanadas ultra crocantes",
-    description: "O mestre das texturas! Um suculento hambúrguer artesanal de 120g (in natura), coberto com queijo cheddar derretido e fatias de bacon crocante. O grande destaque fica por conta das nossas generosas e douradas cebolas empanadas, que trazem o 'crunch' perfeito a cada mordida. Tudo isso no pão brioche macio com o frescor da alface americana e pra finalizar o nosso molho grill de dar água na boca. Prepare os ouvidos para a crocância!",
+    subtitle: "Blend 120g, bacon, cheddar e cebolas empanadas",
+    description: "O mestre das texturas! Um suculento hambúrguer artesanal de 120g (in natura), coberto com queijo cheddar derretido e fatias de bacon crocante. O grande destaque fica por conta das nossas generosas e douradas cebolas empanadas, que trazem o 'crunch' perfeito a cada mordida. Tudo isso no pão brioche macio com o frescor da alface americana e pra finalizar o nosso molho barbecue de dar água na boca. Prepare os ouvidos para a crocância!",
     price: 35.90,
     image: "img/cailu-crispy.jpeg",
     badge: "Super Crocante",
@@ -499,8 +499,8 @@ const PRODUCTS = [
     id: "cailu-love-duplo",
     category: "artesanais",
     name: "Cailu Love Duplo",
-    subtitle: "2 Blends de 120g (240g carne), duplo queijo e bacon carnudo",
-    description: "A união perfeita entre intensidade e cremosidade. São dois blends artesanais de 120g (240g de carne in natura) grelhados na medida certa, acompanhados por duas fatias de queijo prato e a explosão de sabor do nosso cheddar cremoso. Para completar essa experiência, adicionamos fatias de bacon carnudo e crocante, além do frescor da alface americana e do nosso molho grill irresistível, tudo isso servido em um pão brioche macio e selado na manteiga.",
+    subtitle: "2 Blends de 120g (240g carne), bacon e queijo",
+    description: "A união perfeita entre intensidade e cremosidade. São dois blends artesanais de 120g (240g de carne in natura) grelhados na medida certa, acompanhados por duas fatias de queijo e a explosão de sabor do nosso cheddar cremoso. Para completar essa experiência, adicionamos fatias de bacon carnudo e crocante, além do frescor da alface americana e do nosso molho grill irresistível, tudo isso servido em um pão brioche macio e selado na manteiga.",
     price: 37.90,
     image: "img/cailu-duplo.jpeg",
     badge: "Duplo Blend (240g)",
@@ -514,8 +514,8 @@ const PRODUCTS = [
     id: "smash-bacon-melt",
     category: "smash",
     name: "Smash Bacon Melt",
-    subtitle: "Smash crocante, cheddar, bacon caramelizado e molho grill",
-    description: "Pão brioche selado na manteiga, blend smash ultra prensado na chapa com crosta perfeita, queijo cheddar derretido, nosso exclusivo bacon caramelizado artesanal e molho grill da casa.",
+    subtitle: "Smash 80g, bacon caramelizado e cheddar",
+    description: "Pão brioche, blend smash 80g (in natura), bacon fatiado caramelizado artesanalmente, cheddar cremoso, alface americana fresca e molho grill.",
     price: 20.00,
     image: "img/smash-bacon-melt.jpeg",
     badge: "Smash Especial",
@@ -527,8 +527,8 @@ const PRODUCTS = [
     id: "smash-cebola-caramelizada",
     category: "smash",
     name: "Smash Cebola Caramelizada",
-    subtitle: "Smash tostadinho, queijo prato, cebola caramelizada e molho grill",
-    description: "Pão brioche fofinho, blend smash grelhado na chapa bem tostadinho, queijo prato derretido, cebola caramelizada lentamente e molho grill especial Cailu.",
+    subtitle: "Smash 80g, bacon, cebola caramelizada e queijo",
+    description: "Pão brioche macio com smash de 80g (in natura), queijo derretido e bacon crocante. O grande destaque fica por conta da cebola caramelizada. Finalizado com alface americana fresca e molho grill, criando uma combinação intensa, equilibrada e cheia de sabor em cada mordida.",
     price: 20.00,
     image: "img/smash-cebola-caramelizada.jpeg",
     badge: "Sabor Marcante",
@@ -540,8 +540,8 @@ const PRODUCTS = [
     id: "smash-classico-irresistivel",
     category: "smash",
     name: "Smash Clássico Irresistível",
-    subtitle: "Smash com crosta dourada, queijo prato, alface, tomate e molho grill",
-    description: "A combinação infalível: blend smash na chapa com crosta dourada, camada generosa de queijo prato derretido, alface americana, tomate cereja e molho grill da casa.",
+    subtitle: "Smash 80g, bacon e cheddar",
+    description: "Pão brioche selado no bacon, blend smash de 80g (in natura), bacon fatiado crocante, cheddar cremoso, alface fresca americana e molho grill.",
     price: 20.00,
     image: "img/smash-classico-irresistivel.jpeg",
     badge: "Clássico Smash",
@@ -553,8 +553,8 @@ const PRODUCTS = [
     id: "smash-crispy",
     category: "smash",
     name: "Smash Crispy",
-    subtitle: "Smash com crosta dourada, muito cheddar e cebolas empanadas",
-    description: "A combinação infalível: blend smash na chapa com crosta dourada, camada generosa de cheddar cremoso derretido, cebolas empanadas em tiras e molho da casa.",
+    subtitle: "Smash 80g, cebolas empanadas e cheddar",
+    description: "Pão brioche selado no bacon, blend smash de 80g (in natura), cebola crispy super crocante, cheddar cremoso, alface americana fresca e molho barbecue.",
     price: 20.00,
     image: "img/smash-crispy.jpeg",
     badge: "Clássico Smash",
@@ -626,7 +626,7 @@ const PRODUCTS = [
     ],
     sizes: [
       { id: "Pet 200ml", name: "Pet 200ml", price: 4.00, default: true },
-      { id: "Lata 350ml", name: "Lata 350ml", price: 8.00 }
+      //{ id: "Lata 350ml", name: "Lata 350ml", price: 8.00 }
     ]
   },
   {
